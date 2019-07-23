@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2050
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29025.244
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KakaoBotAPI", "KakaoBotAPI\KakaoBotAPI.csproj", "{564EA995-D572-4A10-A312-E0BC12E66424}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KakaoTalkAPI", "..\KakaoTalkAPI\KakaoTalkAPI\KakaoTalkAPI.csproj", "{BD0427C4-BA2A-48F8-8329-11574735F961}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApplication", "SampleApplication\SampleApplication.csproj", "{AA6BF2C8-5537-4E32-89E7-D6A3608B1166}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KakaoTalkAPI", "KakaoTalkAPI\KakaoTalkAPI.csproj", "{BD0427C4-BA2A-48F8-8329-11574735F961}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +19,14 @@ Global
 		{564EA995-D572-4A10-A312-E0BC12E66424}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{564EA995-D572-4A10-A312-E0BC12E66424}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{564EA995-D572-4A10-A312-E0BC12E66424}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BD0427C4-BA2A-48F8-8329-11574735F961}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BD0427C4-BA2A-48F8-8329-11574735F961}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BD0427C4-BA2A-48F8-8329-11574735F961}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BD0427C4-BA2A-48F8-8329-11574735F961}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AA6BF2C8-5537-4E32-89E7-D6A3608B1166}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AA6BF2C8-5537-4E32-89E7-D6A3608B1166}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AA6BF2C8-5537-4E32-89E7-D6A3608B1166}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AA6BF2C8-5537-4E32-89E7-D6A3608B1166}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD0427C4-BA2A-48F8-8329-11574735F961}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD0427C4-BA2A-48F8-8329-11574735F961}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD0427C4-BA2A-48F8-8329-11574735F961}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD0427C4-BA2A-48F8-8329-11574735F961}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

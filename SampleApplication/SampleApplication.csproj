@@ -53,13 +53,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\KakaoTalkAPI\KakaoTalkAPI\KakaoTalkAPI.csproj">
-      <Project>{bd0427c4-ba2a-48f8-8329-11574735f961}</Project>
-      <Name>KakaoTalkAPI</Name>
-    </ProjectReference>
     <ProjectReference Include="..\KakaoBotAPI\KakaoBotAPI.csproj">
       <Project>{564ea995-d572-4a10-a312-e0bc12e66424}</Project>
       <Name>KakaoBotAPI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\KakaoTalkAPI\KakaoTalkAPI.csproj">
+      <Project>{bd0427c4-ba2a-48f8-8329-11574735f961}</Project>
+      <Name>KakaoTalkAPI</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
