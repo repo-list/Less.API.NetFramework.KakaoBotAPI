@@ -4,17 +4,18 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{564EA995-D572-4A10-A312-E0BC12E66424}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Less.API.NetFramework.KakaoBotAPI</RootNamespace>
-    <AssemblyName>KakaoBotAPI</AssemblyName>
+    <ProjectGuid>{AA6BF2C8-5537-4E32-89E7-D6A3608B1166}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>SampleApplication</RootNamespace>
+    <AssemblyName>SampleApplication</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -24,6 +25,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -42,20 +44,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bot\ChatBot.cs" />
-    <Compile Include="Bot\QuizBot.cs" />
-    <Compile Include="People\QuizUser.cs" />
-    <Compile Include="People\Title.cs" />
-    <Compile Include="People\User.cs" />
+    <Compile Include="SampleChatBot.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Util\IniHelper.cs" />
-    <Compile Include="Util\XmlHelper.cs" />
+    <Compile Include="SampleQuizBot.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\KakaoTalkAPI\KakaoTalkAPI\KakaoTalkAPI.csproj">
       <Project>{bd0427c4-ba2a-48f8-8329-11574735f961}</Project>
       <Name>KakaoTalkAPI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\KakaoBotAPI\KakaoBotAPI.csproj">
+      <Project>{564ea995-d572-4a10-a312-e0bc12e66424}</Project>
+      <Name>KakaoBotAPI</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

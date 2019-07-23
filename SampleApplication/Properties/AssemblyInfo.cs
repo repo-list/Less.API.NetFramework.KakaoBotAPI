@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("KakaoBotAPI")]
+[assembly: AssemblyTitle("SampleApplication")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("KakaoBotAPI")]
-[assembly: AssemblyCopyright("Copyright ©  2018 Less")]
+[assembly: AssemblyProduct("SampleApplication")]
+[assembly: AssemblyCopyright("Copyright ©  2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("564ea995-d572-4a10-a312-e0bc12e66424")]
+[assembly: Guid("aa6bf2c8-5537-4e32-89e7-d6a3608b1166")]
 
 // Version information for an assembly consists of the following four values:
 //
