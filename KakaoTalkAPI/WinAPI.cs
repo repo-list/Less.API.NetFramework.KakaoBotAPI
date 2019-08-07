@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Text;
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Less.API.NetFramework.WindowsAPI
 {
@@ -244,9 +244,9 @@ namespace Less.API.NetFramework.WindowsAPI
 
             EnumWindows(delegate (IntPtr hWnd, IntPtr lParam)
             {
-                if (className == null || GetClassName(hWnd).Equals(className))
+                if (className == null || GetClassName(hWnd) == className)
                 {
-                    if (caption == null || GetWindowText(hWnd).Equals(caption))
+                    if (caption == null || GetWindowText(hWnd) == caption)
                     {
                         hWndNew = hWnd;
                         return false;
@@ -265,9 +265,9 @@ namespace Less.API.NetFramework.WindowsAPI
 
             EnumWindows(delegate (IntPtr hWnd, IntPtr lParam)
             {
-                if (className == null || GetClassName(hWnd).Equals(className))
+                if (className == null || GetClassName(hWnd) == className)
                 {
-                    if (caption == null || GetWindowText(hWnd).Equals(caption)) hWndList.Add(hWnd);
+                    if (caption == null || GetWindowText(hWnd) == caption) hWndList.Add(hWnd);
                 }
 
                 return true;

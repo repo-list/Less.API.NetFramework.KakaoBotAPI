@@ -43,12 +43,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bot\ChatBot.cs" />
+    <Compile Include="Bot\IKakaoBot.cs" />
+    <Compile Include="Model\Quiz.cs" />
     <Compile Include="Bot\QuizBot.cs" />
-    <Compile Include="People\QuizUser.cs" />
-    <Compile Include="People\Title.cs" />
-    <Compile Include="People\User.cs" />
+    <Compile Include="Model\QuizUser.cs" />
+    <Compile Include="Model\Title.cs" />
+    <Compile Include="Model\User.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\IniHelper.cs" />
+    <Compile Include="Util\ListUtil.cs" />
     <Compile Include="Util\XmlHelper.cs" />
   </ItemGroup>
   <ItemGroup>

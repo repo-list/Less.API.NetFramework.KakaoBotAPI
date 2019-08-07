@@ -10,7 +10,7 @@
  * 
  * @ ProductName : Less.API.NetFramework.KakaoTalkAPI
  * 
- * @ Version : 0.3.0
+ * @ Version : 1.0.0
  * 
  * @ License : The Non-Profit Open Software License v3.0 (NPOSL-3.0) (https://opensource.org/licenses/NPOSL-3.0)
  * -> 이 API에는 NPOSL-3.0 오픈소스 라이선스가 적용되며, 사용자는 절대 영리적 목적으로 이 API를 사용해서는 안 됩니다.
@@ -25,11 +25,11 @@
  * -> 이 자동화 API를 이용하는 개발자들은 절대 카카오 서비스 약관 (http://www.kakao.com/policy/terms?type=s)에 반하는 바람직하지 않은 행동들을 취해서는 안 됩니다.
  */
 
+using Less.API.NetFramework.WindowsAPI;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-using System.Collections.Generic;
-using Less.API.NetFramework.WindowsAPI;
 
 namespace Less.API.NetFramework.KakaoTalkAPI
 {
@@ -69,6 +69,9 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         public static int EmoticonCheckLimit3 = 500; // 권장 : 1000 이하
         public static int PostDelay = 100; // 권장 : 100 이상
         public static int WindowCloseInterval = 200; // 권장 : 200 이상
+        public static int MessageSelectInterval = 50; // 권장 : 50 이상
+        public static int MessageCopyInterval = 50; // 권장 : 50 이상
+        public static int SetImageInterval = 50; // 권장 : 50 이상
 
         public static int CategoryPossibleMaxCount = 100; // 만약 소유한 이모티콘이 이 수치보다 많으면 계산 시 문제 발생 가능
 
@@ -488,7 +491,7 @@ namespace Less.API.NetFramework.KakaoTalkAPI
             }
 
             /// <summary>
-            /// 채팅 창에 텍스트 메시지를 보냅니다. 정상적으로 메시지가 보내졌다면 true를, 만약 채팅 창이 종료된 상태여서 전송 실패 시 false를 반환합니다.
+            /// 채팅 창에 텍스트 메시지를 보냅니다.
             /// </summary>
             /// <param name="text">보낼 텍스트</param>
             public void SendText(string text)
@@ -520,7 +523,6 @@ namespace Less.API.NetFramework.KakaoTalkAPI
 
             /// <summary>
             /// 클립보드를 활용하여 채팅 창에 이미지를 보냅니다.
-            /// 정상적으로 이미지가 보내졌다면 true를, 만약 채팅 창이 종료된 상태이거나 클립보드 작업에 실패 또는 예기치 않은 문제로 인하여 실패 시 false를 반환합니다.
             /// </summary>
             /// <param name="imagePath">보낼 이미지의 경로 (상대 경로 및 절대 경로 모두 가능)</param>
             public void SendImageUsingClipboard(string imagePath)
@@ -536,15 +538,16 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                 try
                 {
                     IntPtr hMainWindow = WinAPI.FindWindow(MainWindowClass, MainWindowTitle);
-                    lock (Clipboard)
-                    {
-                        if (backupClipboardData) ClipboardManager.BackupData();
-                        ClipboardManager.SetImage(imagePath);
-                    }
                     lock (ChatWindows)
                     {
-                        WinAPI.PostMessage(EditMessageHandle, 0x7E9, 0xE125, 0); // 클립보드에 있는 내용물 붙여넣기
-                        Thread.Sleep(PostDelay);
+                        lock (Clipboard)
+                        {
+                            if (backupClipboardData) ClipboardManager.BackupData();
+                            ClipboardManager.SetImage(imagePath);
+                            Thread.Sleep(SetImageInterval);
+                            WinAPI.PostMessage(EditMessageHandle, 0x7E9, 0xE125, 0); // 클립보드에 있는 내용물 붙여넣기
+                            Thread.Sleep(PostDelay);
+                        }
 
                         // 퍼포먼스 > 가독성 코딩
                         IntPtr hSendDialog = IntPtr.Zero;
@@ -574,7 +577,7 @@ namespace Less.API.NetFramework.KakaoTalkAPI
             }
 
             /// <summary>
-            /// 채팅 창에 이모티콘을 보냅니다. 정상적으로 이모티콘이 보내졌다면 true를, 만약 채팅 창이 종료된 상태이거나 예기치 않은 문제로 인하여 실패 시 false를 반환합니다.
+            /// 채팅 창에 이모티콘을 보냅니다.
             /// </summary>
             /// <param name="emoticon">보낼 이모티콘 객체. KakaoTalk.Emoticon 클래스를 통해 생성한 객체를 전달해주어야 합니다.</param>
             public void SendEmoticon(Emoticon emoticon)
@@ -619,7 +622,7 @@ namespace Less.API.NetFramework.KakaoTalkAPI
 
                         IntPtr hFirstChild = WinAPI.GetWindow(hSendDialog, WinAPI.GW_CHILD);
                         IntPtr hSecondChild = WinAPI.GetWindow(hFirstChild, WinAPI.GW_CHILD);
-                        while (!WinAPI.GetClassName(hSecondChild).Equals(EmoticonSecondChildClass1))
+                        while (WinAPI.GetClassName(hSecondChild) != EmoticonSecondChildClass1)
                         {
                             WinAPI.ClickInBackground(hSendDialog, WinAPI.MouseButton.Left, 58, 56);
                             Thread.Sleep(MouseClickInterval);
@@ -697,10 +700,11 @@ namespace Less.API.NetFramework.KakaoTalkAPI
 
             private Message[] _GetMessagesUsingClipboard(bool backupClipboardData)
             {
-                WinAPI.SendMessage(ChatListHandle, 0x7E9, 0x65, 0); // 메시지 전체 선택
                 string messageString = null;
                 bool isClipboardAvailable = true;
-                Message[] messages = null;
+                List<Message> messages = null;
+                WinAPI.SendMessage(ChatListHandle, 0x7E9, 0x65, 0); // 메시지 전체 선택
+                Thread.Sleep(MessageSelectInterval);
 
                 lock (Clipboard)
                 {
@@ -708,6 +712,7 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                     {
                         if (backupClipboardData) ClipboardManager.BackupData();
                         WinAPI.SendMessage(ChatListHandle, 0x7E9, 0x64, 0); // 메시지 복사
+                        Thread.Sleep(MessageCopyInterval);
                         messageString = ClipboardManager.GetText();
                         if (backupClipboardData) ClipboardManager.RestoreData();
                     }
@@ -717,11 +722,17 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                 if (isClipboardAvailable)
                 {
                     string[] messageStrings = messageString.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
-                    messages = new Message[messageStrings.Length];
-                    for (int i = 0; i < messages.Length; i++) messages[i] = new Message(messageStrings[i]);
+                    messages = new List<Message>();
+                    for (int i = 0; i < messageStrings.Length; i++)
+                    {
+                        var message = new Message(messageStrings[i]);
+                        if (message.Type == MessageType.Unknown) break;
+                        messages.Add(message);
+                    }
                 }
 
-                return messages;
+                if (messages == null) return null;
+                else return messages.ToArray();
             }
 
             /// <summary>
@@ -832,8 +843,8 @@ namespace Less.API.NetFramework.KakaoTalkAPI
             {
                 if (checkInterval > 0) Thread.Sleep(checkInterval);
                 IntPtr hWndForeground = WinAPI.GetForegroundWindow();
-                if (!WinAPI.GetClassName(hWndForeground).Equals(className)) return false;
-                if (!WinAPI.GetWindowText(hWndForeground).Equals(caption)) return false;
+                if (WinAPI.GetClassName(hWndForeground) != className) return false;
+                if (WinAPI.GetWindowText(hWndForeground) != caption) return false;
 
                 hWnd = hWndForeground;
                 return true;
@@ -853,12 +864,12 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                 {
                     hDialog = hDialogList[i];
                     hWndTemp = WinAPI.GetWindow(hDialog, WinAPI.GW_CHILD); // First Child => EVA_ChildWindow
-                    if (!WinAPI.GetClassName(hWndTemp).Equals(EmoticonFirstChildClass)) continue;
+                    if (WinAPI.GetClassName(hWndTemp) != EmoticonFirstChildClass) continue;
                     hWndTemp = WinAPI.GetWindow(hWndTemp, WinAPI.GW_CHILD); // Second Child => EVA_ChildWindow_Dblclk / _EVA_CustomScrollCtrl / EVA_VH_ListControl_Dblclk 셋 중 하나
                     string secondChildClassName = WinAPI.GetClassName(hWndTemp);
-                    if (secondChildClassName.Equals(EmoticonSecondChildClass1) ||
-                        secondChildClassName.Equals(EmoticonSecondChildClass2) ||
-                        secondChildClassName.Equals(EmoticonSecondChildClass3)) break;
+                    if (secondChildClassName == EmoticonSecondChildClass1 ||
+                        secondChildClassName == EmoticonSecondChildClass2 ||
+                        secondChildClassName == EmoticonSecondChildClass3) break;
                 }
 
                 return true;
@@ -869,7 +880,7 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                 if (checkInterval > 0) Thread.Sleep(checkInterval);
 
                 IntPtr hSecondNext = WinAPI.GetWindow(hSecondChild, WinAPI.GW_HWNDNEXT);
-                if (!WinAPI.GetClassName(hSecondNext).Equals(EmoticonSecondNextClass)) return false;
+                if (WinAPI.GetClassName(hSecondNext) != EmoticonSecondNextClass) return false;
 
                 return true;
             }
@@ -892,7 +903,6 @@ namespace Less.API.NetFramework.KakaoTalkAPI
 
             private void RunTasks()
             {
-                Console.WriteLine($"Thread 실행 ({RoomName})");
                 while (ThreadActivated)
                 {
                     if (Tasks.Count > 0)
@@ -932,7 +942,6 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                     }
                     Thread.Sleep(TaskCheckInterval);
                 }
-                Console.WriteLine($"Thread 종료 ({RoomName})");
             }
 
             enum TaskType { SendText = 1, SendImageUsingClipboard, SendEmoticon, GetMessagesUsingClipboard, Close, Reopen, Dispose }

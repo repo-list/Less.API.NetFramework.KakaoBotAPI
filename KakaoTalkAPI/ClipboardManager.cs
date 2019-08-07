@@ -1,7 +1,7 @@
-﻿using System.Drawing;
+﻿using Less.API.NetFramework.WindowsAPI;
 using System;
+using System.Drawing;
 using System.Runtime.InteropServices;
-using Less.API.NetFramework.WindowsAPI;
 
 // .Net Framework에서 기본 제공하는 Clipboard 클래스는 불안정하기 때문에, 전부 Native API로 처리해야 함.
 
@@ -142,7 +142,8 @@ namespace Less.API.NetFramework.KakaoTalkAPI
 
         private static void _SetImage(Bitmap image)
         {
-            using (Graphics graphics = Graphics.FromImage(image))
+            Bitmap tempImage = new Bitmap(image.Width, image.Height);
+            using (Graphics graphics = Graphics.FromImage(tempImage))
             {
                 IntPtr hScreenDC = WinAPI.GetWindowDC(IntPtr.Zero); // 기본적인 Device Context의 속성들을 카피하기 위한 작업
                 IntPtr hDestDC = WinAPI.CreateCompatibleDC(hScreenDC);
@@ -176,6 +177,7 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                 WinAPI.DeleteObject(hSourceDC);
                 WinAPI.DeleteObject(hSourceBitmap);
             }
+            tempImage.Dispose();
         }
 
         public class CannotOpenException : Exception

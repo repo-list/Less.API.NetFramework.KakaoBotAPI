@@ -5,7 +5,7 @@ namespace SampleApplication
 {
     class SampleChatBot : ChatBot
     {
-        public SampleChatBot(string roomName, Target type, string identifier) : base(roomName, type, identifier) {}
+        public SampleChatBot(string roomName, TargetTypeOption type, string botRunnerName, string identifier) : base(roomName, type, botRunnerName, identifier) {}
 
         protected override string GetDateChangeNotice(string content, DateTime sendTime)
         {
@@ -52,7 +52,7 @@ namespace SampleApplication
 
             string[] words = content.Split(' ');
 
-            if (words[0].Equals("!종료")) StopTask();
+            if (words[0].Equals("!종료")) this.Stop();
         }
     }
 }
