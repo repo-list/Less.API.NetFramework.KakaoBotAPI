@@ -259,9 +259,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
             else if (Type == TargetTypeOption.Group) Window = KakaoTalk.MainWindow.Chatting.StartChattingAt(RoomName, minimizeWindow);
 
             KakaoTalk.Message[] messages;
-            while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(KakaoTalk.ProgressCheckInterval);
-            Thread.Sleep(500);
-            messages = Window.GetMessagesUsingClipboard();
+            while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
             int messageCount = messages.Length;
 
             string notice = GetStartNotice();

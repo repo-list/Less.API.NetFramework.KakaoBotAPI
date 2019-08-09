@@ -10,7 +10,7 @@
  * 
  * @ ProductName : Less.API.NetFramework.KakaoTalkAPI
  * 
- * @ Version : 1.0.0
+ * @ Version : 1.0.1
  * 
  * @ License : The Non-Profit Open Software License v3.0 (NPOSL-3.0) (https://opensource.org/licenses/NPOSL-3.0)
  * -> 이 API에는 NPOSL-3.0 오픈소스 라이선스가 적용되며, 사용자는 절대 영리적 목적으로 이 API를 사용해서는 안 됩니다.
@@ -46,7 +46,7 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         /// </summary>
         public readonly static string ApiVersion = FullApiVersion.Substring(0, FullApiVersion.LastIndexOf('.'));
 
-        // 변경해도 되는 값 목록 (개발 시에 유동적으로 변경해서 쓰도록 함)
+        // 변경해도 되는 값 목록 (개발 시에 유동적으로 변경해서 쓰도록 합니다.)
         /// <summary>
         /// 카카오톡이 설치된 경로입니다. 만약 설치 경로를 수동으로 지정했을 경우, 이 값을 변경하여 사용하도록 합니다.
         /// </summary>
@@ -59,28 +59,27 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         public static int KeyPressInterval = 200; // 권장 : 200 이상
         public static int ButtonActivateInterval = 200; // 권장 : 200 이상
         public static int SendActivateInterval = 100; // 권장 : 100 이상
-        public static int ImageCheckInterval = 0; // 권장 : 10 이하, 검사 속도를 빠르게 하는 것이 무엇보다 중요함
+        public static int ImageCheckInterval = 0; // 권장 : 10 이하, 검사 속도를 빠르게 하는 것이 무엇보다 중요
         public static int ImageCheckLimit = 500; // 권장 : 1000 이하
-        public static int EmoticonCheckInterval1 = 0; // 권장 : 10 이하, 검사 속도를 빠르게 하는 것이 무엇보다 중요함
+        public static int EmoticonCheckInterval1 = 0; // 권장 : 10 이하, 검사 속도를 빠르게 하는 것이 무엇보다 중요
         public static int EmoticonCheckLimit1 = 500; // 권장 : 1000 이하
-        public static int EmoticonCheckInterval2 = 0; // 권장 : 10 이하, 검사 속도를 빠르게 하는 것이 무엇보다 중요함
+        public static int EmoticonCheckInterval2 = 0; // 권장 : 10 이하, 검사 속도를 빠르게 하는 것이 무엇보다 중요
         public static int EmoticonCheckLimit2 = 500; // 권장 : 1000 이하
-        public static int EmoticonCheckInterval3 = 0; // 권장 : 10 이하, 검사 속도를 빠르게 하는 것이 무엇보다 중요함
+        public static int EmoticonCheckInterval3 = 0; // 권장 : 10 이하, 검사 속도를 빠르게 하는 것이 무엇보다 중요
         public static int EmoticonCheckLimit3 = 500; // 권장 : 1000 이하
         public static int PostDelay = 100; // 권장 : 100 이상
         public static int WindowCloseInterval = 200; // 권장 : 200 이상
-        public static int MessageSelectInterval = 50; // 권장 : 50 이상
-        public static int MessageCopyInterval = 50; // 권장 : 50 이상
-        public static int SetImageInterval = 50; // 권장 : 50 이상
+        public static int MessageSelectInterval = 20; // 권장 : 20 이상
+        public static int MessageCopyInterval = 20; // 권장 : 20 이상
+        public static int SetImageInterval = 100; // 권장 : 100 이상
 
-        public static int CategoryPossibleMaxCount = 100; // 만약 소유한 이모티콘이 이 수치보다 많으면 계산 시 문제 발생 가능
+        public static int CategoryPossibleMaxCount = 100; // 만약 소유한 이모티콘이 이 수치보다 많으면 계산 시 문제 발생할 수 있습니다.
 
         public static string DateChangeNotifierName = "System"; // KakaoTalk.Message이 DateChange 타입인 경우 Username 값
 
         // 변경해선 안 되는 상수값 목록
         const string MainWindowTitle = "카카오톡";
         const string MainWindowClass = "EVA_Window_Dblclk";
-        const string ProcessName = "KakaoTalk";
 
         const string LoginWindowClass = "EVA_Window";
         const string ChatWindowClass = "#32770";
@@ -88,8 +87,6 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         const string ImageDialogCaption = "";
         const string ImageDialogClass = ChatWindowClass;
 
-        const int EmoticonDialogWidth = 330;
-        const int EmoticonDialogHeight = 450;
         const string EmoticonDialogCaption = "";
         const string EmoticonDialogClass = MainWindowClass;
         const string EmoticonFirstChildClass = "EVA_ChildWindow";
@@ -123,19 +120,6 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         }
 
         /// <summary>
-        /// 현재 로그인이 된 상태인지 확인합니다. 로그인된 상태이면 true를, 그렇지 않으면 false를 반환합니다.
-        /// </summary>
-        public static bool IsLoggedIn()
-        {
-            IntPtr hLoginWindow = WinAPI.FindWindow(LoginWindowClass, MainWindowTitle);
-            IntPtr hMainWindow = WinAPI.FindWindow(MainWindowClass, MainWindowTitle);
-            IntPtr hAdArea = WinAPI.GetWindow(hMainWindow, WinAPI.GW_CHILD);
-            for (int i = 0; i < 2; i++) hAdArea = WinAPI.GetWindow(hAdArea, WinAPI.GW_HWNDNEXT);
-
-            return (IsWindowOpen() && hLoginWindow == IntPtr.Zero && hAdArea != IntPtr.Zero) ? true : false;
-        }
-
-        /// <summary>
         /// 로그인 패널이 열려 있는 여부를 반환합니다. 열려 있는 상태이면 true를, 그렇지 않으면 false를 반환합니다.
         /// </summary>
         private static bool IsLoginWindowLoaded()
@@ -161,36 +145,36 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         {
             if (IsWindowOpen()) return;
 
-            Process process = Process.Start(InstallPath);
+            Process.Start(InstallPath);
             while (!IsWindowOpen()) Thread.Sleep(ProgressCheckInterval);
         }
 
         /// <summary>
-        /// 로그인 패널의 핸들값과 이메일, 비밀번호를 입력받아 로그인을 시작합니다.
-        /// 반드시 Run 메서드를 실행한 후에 호출해야 하며, 그렇지 않았을 경우 KakaoTalk.NotOpenException 예외가 발생합니다.
-        /// 또한 이미 로그인이 되어 있는 경우, KakaoTalk.AlreadyLoggedInException 예외가 발생합니다.
+        /// 로그인 패널의 핸들값과 이메일, 비밀번호를 입력받아 로그인을 시작합니다.<para/>
+        /// 반드시 Run 메서드를 실행한 후에 호출해야 하며, 그렇지 않았을 경우 KakaoTalk.NotOpenException 예외가 발생합니다.<para/>
+        /// 또한 이미 로그인이 된 상태에서 호출할 경우, 무한 루프에 빠지게 되니 각별한 주의가 필요합니다. (현재, 로그인 여부를 완벽하게 판별할 수 있는 방법을 찾는 중입니다.)
         /// </summary>
         /// <param name="email">사용자의 이메일 (카카오계정)</param>
         /// <param name="password">사용자의 비밀번호</param>
         public static void Login(string email, string password)
         {
             if (!IsWindowOpen()) throw new NotOpenException();
-            else if (IsLoggedIn()) throw new AlreadyLoggedInException();
 
-            // 로그인 패널이 정상적으로 열릴 때까지 대기
+            // 로그인 패널이 정상적으로 열릴 때까지 대기합니다.
+            // ※ 만약 이미 로그인이 된 상태에서 여기에 도달할 경우, 무한 루프에 빠지는 결과를 초래하니 주의해야 합니다.
             while (!IsLoginWindowLoaded()) Thread.Sleep(ProgressCheckInterval);
 
             IntPtr hLoginWindow = WinAPI.FindWindow(LoginWindowClass, MainWindowTitle);
             IntPtr hEditEmail = WinAPI.GetWindow(hLoginWindow, WinAPI.GW_CHILD);
             IntPtr hEditPassword = WinAPI.GetWindow(hEditEmail, WinAPI.GW_HWNDNEXT);
-
             Thread.Sleep(UIChangeInterval);
 
             WinAPI.SetEditText(hEditEmail, email, WinAPI.Encoding.Unicode);
             WinAPI.SetEditText(hEditPassword, password, WinAPI.Encoding.Unicode);
             Thread.Sleep(ButtonActivateInterval);
             WinAPI.PressKeyInBackground(hLoginWindow, WinAPI.KeyCode.VK_ENTER);
-            while (!IsLoggedIn()) Thread.Sleep(ProgressCheckInterval);
+
+            while ((!IsWindowOpen() || WinAPI.FindWindow(LoginWindowClass, MainWindowTitle) != IntPtr.Zero)) Thread.Sleep(ProgressCheckInterval);
 
             InitializeAppSettings();
         }
@@ -202,8 +186,6 @@ namespace Less.API.NetFramework.KakaoTalkAPI
 
         private static void InitializeAppSettings()
         {
-            if (!IsLoggedIn()) throw new NotLoggedInException();
-
             IntPtr hMainWindow = WinAPI.FindWindow(MainWindowClass, MainWindowTitle);
             MainWindow = new KTMainWindow(hMainWindow);
 
@@ -211,10 +193,9 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         }
 
         /// <summary>
-        /// 앱 세팅을 수동으로 초기화합니다.
-        /// Run 및 Login 메서드를 통해 카카오톡을 실행했을 경우에는 따로 호출할 필요가 없으며,
-        /// 이미 로그인된 상태에서 Login 메서드를 호출하여 KakaoTalk.AlreadyLoggedInException이 발생한 경우에 호출합니다.
-        /// 그렇지 않으면 KakaoTalk.NotLoggedInException 예외가 발생합니다.
+        /// 앱 세팅을 수동으로 초기화합니다.<para/>
+        /// Run 및 Login 메서드를 통해 정상적으로 카카오톡이 준비가 된 경우에는 따로 호출할 필요가 없으며,<para/>
+        /// 이미 로그인된 상태에서 바로 호출하거나, Login 메서드를 호출한 다음 KakaoTalk.AlreadyLoggedInException이 발생할 경우에 호출합니다.
         /// </summary>
         public static void InitializeManually()
         {
@@ -229,7 +210,6 @@ namespace Less.API.NetFramework.KakaoTalkAPI
             // 핸들 목록
             IntPtr RootHandle { get; }
             IntPtr TabAreaHandle { get; }
-            IntPtr AdAreaHandle { get; }
 
             // 클래스 인스턴스 변수 목록
             public FriendsTab Friends { get; }
@@ -240,7 +220,6 @@ namespace Less.API.NetFramework.KakaoTalkAPI
             {
                 RootHandle = hMainWindow;
                 TabAreaHandle = WinAPI.GetWindow(hMainWindow, WinAPI.GW_CHILD);
-                for (int i = 0; i < 2; i++) AdAreaHandle = WinAPI.GetWindow(TabAreaHandle, WinAPI.GW_HWNDNEXT);
 
                 IntPtr hFriendTab = WinAPI.GetWindow(TabAreaHandle, WinAPI.GW_CHILD);
                 IntPtr hChattingTab = WinAPI.GetWindow(hFriendTab, WinAPI.GW_HWNDNEXT);
@@ -394,7 +373,7 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                 }
 
                 /// <summary>
-                /// 해당 이름을 가진 채팅방에서 대화를 시작합니다. (채팅방 이름은 정확히 일치해야 합니다)
+                /// 해당 이름을 가진 채팅방에서 대화를 시작합니다. (채팅방 이름은 정확히 일치해야 합니다)<para/>
                 /// 만약 내가 만든 오픈채팅방일 경우에는, 해당 방의 메뉴 아이콘 클릭 -> 채팅방 설정 클릭 후 채팅방 이름을 변경해주어야 정상 작동합니다.
                 /// </summary>
                 /// <param name="roomName">검색할 채팅방 이름</param>
@@ -644,11 +623,6 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                         while (!IsEmoticonTabReady(hSecondChild, EmoticonCheckInterval3)) if (DateTime.Now.Ticks - prevTick >= limitInTicks) break;
                         IntPtr hSecondNext = WinAPI.GetWindow(hSecondChild, WinAPI.GW_HWNDNEXT);
 
-                        var dialogRect = WinAPI.GetWindowRect(hSendDialog);
-                        int dialogWidth = dialogRect.right - dialogRect.left;
-                        int dialogHeight = dialogRect.bottom - dialogRect.top;
-                        //if (dialogWidth != EmoticonDialogWidth || dialogHeight != EmoticonDialogHeight) ResizeDialog(hSendDialog, EmoticonDialogWidth, EmoticonDialogHeight);
-
                         // 카테고리 커서 초기화
                         int categorySingleRowCount = 7;
                         int categoryKeyleftLoopCount = categorySingleRowCount - 1;
@@ -852,10 +826,10 @@ namespace Less.API.NetFramework.KakaoTalkAPI
 
             private bool IsSendEmoticonDialogReady(ref IntPtr hDialog, int checkInterval)
             {
-                // 이모티콘 다이얼로그의 실행은 "현재 카톡 창이 ForegroundWindow인가"에 의해 결정됨.
+                // 이모티콘 다이얼로그의 실행은 "현재 카톡 창이 ForegroundWindow인가"에 의해 결정됩니다.
                 // 만약 ForegroundWindow라면, 해당 시점에 EmoticonDialogClass와 EmoticonDialogCaption를 가진 첫 번째 다이얼로그이며,
-                // 그렇지 않다면, 해당 시점에 EmoticonDialogClass와 EmoticonDialogCaption를 가진 또 다른 다이얼로그가 이모티콘 다이얼로그임.
-                // 그래서 해당 식별자들을 가진 Topmost Window Handle 목록을 얻어온 다음 원하는 구조를 가지고 있는 다이얼로그를 찾는 작업이 필요함.
+                // 그렇지 않다면, 해당 시점에 EmoticonDialogClass와 EmoticonDialogCaption를 가진 또 다른 다이얼로그가 이모티콘 다이얼로그입니다.
+                // 그래서 해당 식별자들을 가진 Topmost Window Handle 목록을 얻어온 다음 원하는 구조를 가지고 있는 다이얼로그를 찾는 작업이 필요합니다.
 
                 if (checkInterval > 0) Thread.Sleep(checkInterval);
                 IntPtr hWndTemp;

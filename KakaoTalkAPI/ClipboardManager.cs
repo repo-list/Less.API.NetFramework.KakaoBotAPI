@@ -9,14 +9,9 @@ namespace Less.API.NetFramework.KakaoTalkAPI
 {
     internal sealed class ClipboardManager
     {
-        // 버전 정보
-        private static string FullApiVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-        public readonly static string ApiVersion = FullApiVersion.Substring(0, FullApiVersion.LastIndexOf('.'));
-
         public static bool HasDataToRestore = false;
         static uint Format;
         static object Data;
-        //static readonly IntPtr ClipboardOwner = IntPtr.Zero;
         static readonly IntPtr ClipboardOwner = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
         static IntPtr MemoryHandle = IntPtr.Zero;
 

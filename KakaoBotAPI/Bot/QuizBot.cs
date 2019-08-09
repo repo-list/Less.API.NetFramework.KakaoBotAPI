@@ -539,7 +539,8 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <returns>퀴즈 데이터 목록</returns>
         protected List<Quiz.Data> GetQuizDataList(Quiz.TypeOption requestedQuizType, string[] subjects, int quizCount)
         {
-            var resultDataList = new List<Quiz.Data>();
+            var data2dList = new List<List<Quiz.Data>>();
+            List<Quiz.Data> tempList;
             bool matchesChildSubject;
 
             /* resultDataList 초기화 */
@@ -552,12 +553,14 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                         string mainSubject = quiz.MainSubject;
                         if (mainSubject == subjects[i])
                         {
+                            tempList = new List<Quiz.Data>();
                             for (int j = 0; j < quiz.DataList.Count; j++)
                             {
                                 var data = quiz.DataList[j];
                                 if (quiz.UseMultiChoice == true) data.Choices = GetChoiceList(quiz, data);
-                                resultDataList.Add(data);
+                                tempList.Add(data);
                             }
+                            data2dList.Add(tempList);
                             break;
                         }
                         else
@@ -567,15 +570,17 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                             {
                                 if ($"{mainSubject}-{childSubject}" == subjects[i])
                                 {
+                                    tempList = new List<Quiz.Data>();
                                     for (int j = 0; j < quiz.DataList.Count; j++)
                                     {
                                         var data = quiz.DataList[j];
                                         if (data.ChildSubject == childSubject)
                                         {
                                             if (quiz.UseMultiChoice == true) data.Choices = GetChoiceList(quiz, data);
-                                            resultDataList.Add(data);
+                                            tempList.Add(data);
                                         }
                                     }
+                                    data2dList.Add(tempList);
                                     matchesChildSubject = true;
                                 }
                             }
@@ -585,11 +590,45 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                 }
             }
 
-            /* resultDataList Shuffle */
-            for (int i = 0; i < 3; i++) ListUtil.Shuffle(resultDataList);
+            /* data2dList Shuffle */
+            int shuffleCount = 3;
+            for (int i = 0; i < data2dList.Count; i++)
+            {
+                for (int j = 0; j < shuffleCount; j++)
+                {
+                    ListUtil.Shuffle(data2dList[i]);
+                }
+            }
 
-            /* resultDataList Trim */
-            if (resultDataList.Count > quizCount) resultDataList.RemoveRange(quizCount, resultDataList.Count - quizCount);
+            /* 배열 리스트, 문항 수 초기화 */
+            List<Quiz.Data[]> dataArrList = new List<Quiz.Data[]>();
+            int totalCount = 0;
+            for (int i = 0; i < data2dList.Count; i++)
+            {
+                dataArrList.Add(new Quiz.Data[data2dList[i].Count]);
+                totalCount += data2dList[i].Count;
+            }
+            if (totalCount > quizCount) totalCount = quizCount;
+
+            /* 문제 선택 및 결과 리스트로 이동 */
+            var resultDataList = new List<Quiz.Data>();
+            for (int i = 0; i < totalCount; i++)
+            {
+                int randomValue = BotRandom.Next(dataArrList.Count);
+                for (int j = 0; j < dataArrList[randomValue].Length; j++)
+                {
+                    if (dataArrList[randomValue][j] == null)
+                    {
+                        dataArrList[randomValue][j] = data2dList[randomValue][j];
+                        resultDataList.Add(dataArrList[randomValue][j]);
+                        break;
+                    }
+                    else if (j == dataArrList[randomValue].Length - 1) { i--; }
+                }
+            }
+
+            /* 결과 리스트 shuffle (리스트 내에서 다시 셔플) */
+            for (int i = 0; i < shuffleCount; i++) ListUtil.Shuffle(resultDataList);
 
             return resultDataList;
         }
@@ -684,8 +723,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                 string beforeImagePath = quizData.BeforeImagePath;
                 string afterImagePath = quizData.AfterImagePath;
                 bool isCaseSensitive = quizData.IsCaseSensitive;
-
-                do { messages = Window.GetMessagesUsingClipboard(); } while (messages == null);
+                while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
                 quizMessageIndex = (messages.Length - 1) + 1; // 뒤에 바로 SendMessage를 하므로, +1 해서 초기화
                 string randomText = isRandom ? "랜덤 " : "";
                 SendMessage($"[{randomText}" + (showSubject ? subject : "") + $" {currentQuiz}/{requestQuizCount}]{question}");
@@ -710,7 +748,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                 while (IsQuizTaskRunning && shouldContinue)
                 {
                     Thread.Sleep(QuizScanInterval);
-                    do { messages = Window.GetMessagesUsingClipboard(); } while (messages == null);
+                    while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
                     for (int j = quizMessageIndex; j < messages.Length; j++)
                     {
                         messageType = messages[j].Type;
@@ -721,7 +759,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
 
                         if (!isCaseSensitive) { content = content.ToLower(); answer = answer.ToLower(); }
 
-                        if (IsQuizTaskRunning) // 다른 곳에서 StopQuiz 요청에 의해 IsQuizRunning은 false가 될 수 있음. 따라서 검사 시마다 확인.
+                        if (IsQuizTaskRunning) // 다른 곳에서 StopQuiz 요청에 의해 IsQuizTaskRunning은 false가 될 수 있음. 따라서 검사 시마다 확인.
                         {
                             if (messageType == KakaoTalk.MessageType.Talk && content == answer)
                             {

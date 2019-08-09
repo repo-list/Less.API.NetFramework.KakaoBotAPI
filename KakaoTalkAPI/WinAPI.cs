@@ -10,10 +10,6 @@ namespace Less.API.NetFramework.WindowsAPI
     /// </summary>
     public sealed class WinAPI
     {
-        // 버전 정보
-        private static string FullApiVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-        public readonly static string ApiVersion = FullApiVersion.Substring(0, FullApiVersion.LastIndexOf('.'));
-
         // hWnd 관련 상수값 목록
         public const int GW_HWNDFIRST = 0;
         public const int GW_HWNDLAST = 1;
