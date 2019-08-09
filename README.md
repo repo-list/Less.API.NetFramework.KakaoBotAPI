@@ -10,7 +10,7 @@ An advanced application of the previous publish, "KakaoTalk API". <br/>
 
 @ ProductName : Less.API.NetFramework.KakaoBotAPI
 
-@ Version : 0.1.0
+@ Version : 1.0.0
 
 @ License : The Non-Profit Open Software License v3.0 (NPOSL-3.0) (https://opensource.org/licenses/NPOSL-3.0) <br/>
 - -> 이 API에는 NPOSL-3.0 오픈소스 라이선스가 적용되며, 사용자는 절대 영리적 목적으로 이 API를 사용해서는 안 됩니다.
@@ -22,6 +22,10 @@ An advanced application of the previous publish, "KakaoTalk API". <br/>
 - -> 이 자동화 API를 이용하는 개발자들은 절대 카카오 서비스 약관 (http://www.kakao.com/policy/terms?type=ts) 에 반하는 바람직하지 않은 행동들을 취해서는 안 됩니다.
 
 # Version History
-@ 0.1.0 (2019-07-23, Latest) <br/>
+@ 1.0.0 (2019-08-08, Lastest) <br/>
+- ChatBot and QuizBot class is now finished (ChatBot 및 QuizBot 클래스가 완성되었습니다.) <br/>
+- All Properties and Methods now have comments. (모든 속성과 메서드에 주석 처리 완료하였습니다.) <br/><br/>
+
+@ 0.1.0 (2019-07-23) <br/>
 - Initial publish of KakaoBot API. <br/>
 - -> 카카오봇 API 최초 공개.
