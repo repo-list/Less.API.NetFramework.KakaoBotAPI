@@ -223,8 +223,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
 
             SendMessage("퀴즈를 시작합니다.");
             Thread.Sleep(SendMessageInterval);
-            QuizTaskRunner = new Thread(new ParameterizedThreadStart(RunQuiz));
-            QuizTaskRunner.Start(parameters);
+            RunQuiz(parameters); // 기존에 Multi-Thread로 처리하던 것을 동일 Thread에서의 처리로 변경
         }
 
         /// <summary>
@@ -691,7 +690,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         protected void RunQuiz(object data)
         {
             var parameters = (Dictionary<string, object>)data;
-            var quizType = (Quiz.TypeOption)parameters["quizType"];
+            // var quizType = (Quiz.TypeOption)parameters["quizType"];
             string[] subjects = (string[])parameters["subjects"];
             int requestQuizCount = (int)parameters["requestQuizCount"];
             int quizTimeLimit = (int)parameters["quizTimeLimit"];
@@ -706,8 +705,8 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
             KakaoTalk.MessageType messageType;
             string userName;
             string content;
+            DateTime sendTime;
             QuizUser user;
-            int quizMessageIndex;
             int lastInputTick = Environment.TickCount;
 
             for (int i = 0; i < requestQuizCount; i++) // == quizDataList.Count
@@ -723,8 +722,9 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                 string beforeImagePath = quizData.BeforeImagePath;
                 string afterImagePath = quizData.AfterImagePath;
                 bool isCaseSensitive = quizData.IsCaseSensitive;
+                
                 while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
-                quizMessageIndex = (messages.Length - 1) + 1; // 뒤에 바로 SendMessage를 하므로, +1 해서 초기화
+                LastMessageIndex = (messages.Length - 1) + 1; // 뒤에 바로 SendMessage를 하므로, +1 해서 초기화
                 string randomText = isRandom ? "랜덤 " : "";
                 SendMessage($"[{randomText}" + (showSubject ? subject : "") + $" {currentQuiz}/{requestQuizCount}]{question}");
 
@@ -748,43 +748,56 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                 while (IsQuizTaskRunning && shouldContinue)
                 {
                     Thread.Sleep(QuizScanInterval);
-                    while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
-                    for (int j = quizMessageIndex; j < messages.Length; j++)
+                    if (Environment.TickCount > lastInputTick + (idleTimeLimit * 1000))
                     {
-                        messageType = messages[j].Type;
-                        userName = messages[j].UserName;
-                        content = messages[j].Content;
-                        user = FindUserByNickname(userName);
-                        if (user == null) AddNewUser(userName);
-
-                        if (!isCaseSensitive) { content = content.ToLower(); answer = answer.ToLower(); }
-
-                        if (IsQuizTaskRunning) // 다른 곳에서 StopQuiz 요청에 의해 IsQuizTaskRunning은 false가 될 수 있음. 따라서 검사 시마다 확인.
+                        SendMessage("장시간 유효한 입력이 발생하지 않아 문제 풀이를 중단합니다. 잠시만 기다려주세요...");
+                        IsQuizTaskRunning = false;
+                        break;
+                    }
+                    else if (Environment.TickCount > beginTick + (quizTimeLimit * 1000)) // 시간 제한 초과
+                    {
+                        SendMessage($"정답자가 없어서 다음 문제로 넘어갑니다. 정답: {answer}");
+                        Thread.Sleep(1500);
+                        shouldContinue = false;
+                    }
+                    else
+                    {
+                        while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
+                        sendTime = DateTime.Now;
+                        for (int j = LastMessageIndex; j < messages.Length; j++)
                         {
-                            if (messageType == KakaoTalk.MessageType.Talk && content == answer)
+                            messageType = messages[j].Type;
+                            userName = messages[j].UserName;
+                            content = messages[j].Content;
+
+                            LastMessageIndex++;
+                            user = FindUserByNickname(userName);
+                            if (user == null) AddNewUser(userName);
+
+                            if (!isCaseSensitive) { content = content.ToLower(); answer = answer.ToLower(); }
+
+                            if (IsQuizTaskRunning) // 다른 곳에서 StopQuiz 요청에 의해 IsQuizTaskRunning은 false가 될 수 있음. 따라서 검사 시마다 확인.
                             {
-                                lastInputTick = Environment.TickCount;
-                                SendMessage($"정답: {answer}, 정답자: [{user.CurrentTitle.Name}]{user.Nickname} (Lv. {user.Level}), 경험치: {user.Experience + bonusExperience}(+{bonusExperience}), 머니: {user.Money + bonusMoney}(+{bonusMoney})");
-                                UpdateUserProfile(user, bonusExperience, bonusMoney);
-                                Thread.Sleep(1500);
-                                shouldContinue = false;
-                                break;
+                                if (messageType == KakaoTalk.MessageType.Unknown) continue;
+                                else if (messageType == KakaoTalk.MessageType.DateChange) SendDateChangeNotice(content, sendTime);
+                                else if (messageType == KakaoTalk.MessageType.UserJoin) SendUserJoinNotice(userName, sendTime);
+                                else if (messageType == KakaoTalk.MessageType.UserLeave) SendUserLeaveNotice(userName, sendTime);
+                                else if (messageType == KakaoTalk.MessageType.Talk)
+                                {
+                                    if (content == answer)
+                                    {
+                                        lastInputTick = Environment.TickCount;
+                                        SendMessage($"정답: {answer}, 정답자: [{user.CurrentTitle.Name}]{user.Nickname} (Lv. {user.Level}), 경험치: {user.Experience + bonusExperience}(+{bonusExperience}), 머니: {user.Money + bonusMoney}(+{bonusMoney})");
+                                        UpdateUserProfile(user, bonusExperience, bonusMoney);
+                                        Thread.Sleep(1500);
+                                        shouldContinue = false;
+                                        break;
+                                    }
+                                    else ProcessUserMessage(userName, content, sendTime);
+                                }
                             }
-                            else if (Environment.TickCount > lastInputTick + (idleTimeLimit * 1000))
-                            {
-                                SendMessage("장시간 유효한 입력이 발생하지 않아 문제 풀이를 중단합니다. 잠시만 기다려주세요...");
-                                IsQuizTaskRunning = false;
-                                break;
-                            }
-                            else if (Environment.TickCount > beginTick + (quizTimeLimit * 1000)) // 시간 제한 초과
-                            {
-                                SendMessage($"정답자가 없어서 다음 문제로 넘어갑니다. 정답: {answer}");
-                                Thread.Sleep(1500);
-                                shouldContinue = false;
-                                break;
-                            }
+                            else break;
                         }
-                        else break;
                     }
                     if (IsQuizTaskRunning && !shouldContinue)
                     {
@@ -810,17 +823,10 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
             }
             if (IsQuizTaskRunning) IsQuizTaskRunning = false;
             Thread.Sleep(2000);
+            while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
+            LastMessageIndex = (messages.Length - 1) + 1;
             SendMessage("퀴즈가 종료되었습니다. \"!명령어\"를 통하여 기능을 확인하세요.");
             Thread.Sleep(SendMessageInterval);
-            ReleaseMainThread();
-        }
-
-        /// <summary>
-        /// 다중 Thread 처리 시 발생할 수 있는 DeadLock 문제를 해결하기 위한 메서드입니다.
-        /// </summary>
-        protected void ReleaseMainThread()
-        {
-            lock (Window) Monitor.PulseAll(Window);
         }
 
         /// <summary>

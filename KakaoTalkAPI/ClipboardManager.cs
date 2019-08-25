@@ -12,17 +12,16 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         public static bool HasDataToRestore = false;
         static uint Format;
         static object Data;
-        static readonly IntPtr ClipboardOwner = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
         static IntPtr MemoryHandle = IntPtr.Zero;
 
         /// <summary>
         /// 현재 클립보드에 저장되어 있는 데이터를 백업합니다. 클립보드 열기 요청 실패 시 ClipboardManager.CannotOpenException 예외가 발생합니다.
         /// </summary>
-        public static void BackupData()
+        public static void BackupData(IntPtr clipboardOwner)
         {
             Format = 0;
 
-            bool isClipboardOpen = WinAPI.OpenClipboard(ClipboardOwner);
+            bool isClipboardOpen = WinAPI.OpenClipboard(clipboardOwner);
             if (!isClipboardOpen) throw new CannotOpenException();
             do { Format = WinAPI.EnumClipboardFormats(Format); }
             while (Format >= 0x200 || Format == 0);
@@ -51,13 +50,13 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         /// <summary>
         /// 백업했던 클립보드 데이터를 복구합니다. 현재 텍스트와 이미지만 복구 기능을 지원하며, 클립보드 열기 요청 실패 시 ClipboardManager.CannotOpenException 예외가 발생합니다.
         /// </summary>
-        public static void RestoreData()
+        public static void RestoreData(IntPtr clipboardOwner)
         {
             if (!HasDataToRestore) return;
 
             if (Format == WinAPI.CF_TEXT || Format == WinAPI.CF_UNICODETEXT)
             {
-                bool isClipboardOpen = WinAPI.OpenClipboard(ClipboardOwner);
+                bool isClipboardOpen = WinAPI.OpenClipboard(clipboardOwner);
                 if (!isClipboardOpen) throw new CannotOpenException();
             }
 
@@ -72,7 +71,7 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                 case WinAPI.CF_BITMAP:
                 case WinAPI.CF_DIB:
                     Format = WinAPI.CF_BITMAP;
-                    SetImage(MemoryHandle);
+                    SetImage(MemoryHandle, clipboardOwner);
                     (Data as Bitmap).Dispose();
                     break;
             }
@@ -87,11 +86,11 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         /// <summary>
         /// 클립보드에서 텍스트를 가져옵니다. 클립보드 열기 요청 실패 시 ClipboardManager.CannotOpenException 예외가 발생하고, 만약 텍스트가 존재하지 않을 경우 null을 반환합니다.
         /// </summary>
-        public static string GetText()
+        public static string GetText(IntPtr clipboardOwner)
         {
             string text = null;
 
-            bool isClipboardOpen = WinAPI.OpenClipboard(ClipboardOwner);
+            bool isClipboardOpen = WinAPI.OpenClipboard(clipboardOwner);
             if (!isClipboardOpen) throw new CannotOpenException();
             IntPtr pointer = WinAPI.GetClipboardData(WinAPI.CF_UNICODETEXT);
             if (pointer == IntPtr.Zero)
@@ -109,9 +108,9 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         /// 클립보드에 텍스트를 저장합니다. 클립보드 열기 요청 실패 시 ClipboardManager.CannotOpenException 예외가 발생합니다.
         /// </summary>
         /// <param name="text">저장할 텍스트</param>
-        public static void SetText(string text)
+        public static void SetText(string text, IntPtr clipboardOwner)
         {
-            bool isClipboardOpen = WinAPI.OpenClipboard(ClipboardOwner);
+            bool isClipboardOpen = WinAPI.OpenClipboard(clipboardOwner);
             if (!isClipboardOpen) throw new CannotOpenException();
             WinAPI.EmptyClipboard();
             WinAPI.SetClipboardData(WinAPI.CF_TEXT, Marshal.StringToHGlobalAnsi(text));
@@ -125,17 +124,17 @@ namespace Less.API.NetFramework.KakaoTalkAPI
         /// 따라서 이 메서드를 반복문 내에서 사용할 때는 주의가 필요합니다.
         /// </summary>
         /// <param name="imagePath">저장할 이미지의 원본 파일 경로</param>
-        public static void SetImage(string imagePath)
+        public static void SetImage(string imagePath, IntPtr clipboardOwner)
         {
-            using (Bitmap image = (Bitmap)Image.FromFile(imagePath)) _SetImage(image);
+            using (Bitmap image = (Bitmap)Image.FromFile(imagePath)) _SetImage(image, clipboardOwner);
         }
 
-        public static void SetImage(IntPtr hBitmap)
+        public static void SetImage(IntPtr hBitmap, IntPtr clipboardOwner)
         {
-            using (Bitmap image = Image.FromHbitmap(hBitmap)) _SetImage(image);
+            using (Bitmap image = Image.FromHbitmap(hBitmap)) _SetImage(image, clipboardOwner);
         }
 
-        private static void _SetImage(Bitmap image)
+        private static void _SetImage(Bitmap image, IntPtr clipboardOwner)
         {
             Bitmap tempImage = new Bitmap(image.Width, image.Height);
             using (Graphics graphics = Graphics.FromImage(tempImage))
@@ -156,7 +155,7 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                 graphics.ReleaseHdc(hSourceDC);
                 WinAPI.DeleteDC(hDestDC);
 
-                bool isClipboardOpen = WinAPI.OpenClipboard(ClipboardOwner);
+                bool isClipboardOpen = WinAPI.OpenClipboard(clipboardOwner);
                 if (!isClipboardOpen)
                 {
                     WinAPI.DeleteObject(hDestBitmap);

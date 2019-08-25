@@ -267,7 +267,6 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
             Thread.Sleep(SendMessageInterval);
 
             LastMessageIndex = (messageCount - 1) + 1; // (messageCount - 1) + greetingMessage
-
             MainTaskRunner = new Thread(new ThreadStart(RunMain));
             MainTaskRunner.Start();
         }

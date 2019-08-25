@@ -36,6 +36,8 @@ namespace Less.API.NetFramework.KakaoBotAPI.Util
 
         XmlWriterSettings WriterSettings;
 
+        const int ThreadProcessInterval = 20;
+
         /// <summary>
         /// XML 헬퍼 객체를 생성합니다.
         /// </summary>
@@ -80,6 +82,8 @@ namespace Less.API.NetFramework.KakaoBotAPI.Util
         /// </summary>
         void CreateTask()
         {
+            Thread.Sleep(ThreadProcessInterval);
+
             using (var writer = XmlWriter.Create(Path, WriterSettings))
             {
                 writer.WriteStartDocument(true);
@@ -105,6 +109,8 @@ namespace Less.API.NetFramework.KakaoBotAPI.Util
         /// </summary>
         void ReadTask()
         {
+            Thread.Sleep(ThreadProcessInterval);
+
             bool isRootNode = true;
             string childNodeName = null;
             var pKeys = new List<string>();
