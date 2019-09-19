@@ -50,12 +50,12 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <summary>
         /// 퀴즈 설정 파일의 이름
         /// </summary>
-        protected const string QuizSettingsName = "settings";
+        protected const string QuizSettingsFileName = "settings";
 
         /// <summary>
         /// 퀴즈 설정 파일의 확장자
         /// </summary>
-        protected const string QuizSettingsExtension = IniHelper.FileExtension;
+        protected const string QuizSettingsFileExtension = IniHelper.FileExtension;
 
         /// <summary>
         /// 퀴즈 설정 파일의 Section 이름
@@ -65,12 +65,12 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <summary>
         /// 퀴즈 데이터 파일의 이름
         /// </summary>
-        protected const string QuizDataName = "data";
+        protected const string QuizDataFileName = "data";
 
         /// <summary>
         /// 퀴즈 데이터 파일의 확장자
         /// </summary>
-        protected const string QuizDataExtension = XmlHelper.FileExtension;
+        protected const string QuizDataFileExtension = XmlHelper.FileExtension;
 
         /// <summary>
         /// 퀴즈 목록
@@ -87,12 +87,12 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <summary>
         /// 퀴즈 시작 시 나오는 공지 목록 파일의 이름
         /// </summary>
-        protected const string MessageQuizNoticeName = "quiz_notice";
+        protected const string QuizNoticeFileName = "quiz_notice";
 
         /// <summary>
         /// 퀴즈 시작 시 나오는 공지 목록 파일의 확장자
         /// </summary>
-        protected const string MessageQuizNoticeExtension = ".dat";
+        protected const string QuizNoticeFileExtension = ConfigFileDefaultExtension;
 
         /// <summary>
         /// 퀴즈 Thread의 메시지 폴링 간격
@@ -112,12 +112,12 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <summary>
         /// 퀴즈 주제 추가 방법을 설명하는 파일의 이름
         /// </summary>
-        protected const string QuizAddSubjectName = "주제 추가 방법";
+        protected const string QuizAddSubjectName = "퀴즈 주제 추가 방법";
 
         /// <summary>
         /// 퀴즈 주제 추가 방법을 설명하는 파일의 확장자
         /// </summary>
-        protected const string QuizAddSubjectExtension = ".txt";
+        protected const string QuizAddSubjectExtension = TextFileExtension;
 
         /// <summary>
         /// 퀴즈봇 객체를 생성합니다.
@@ -152,7 +152,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         {
             RefreshQuizList();
 
-            string path = QuizPath + QuizAddSubjectName + QuizAddSubjectExtension;
+            string path = QuizAddSubjectName + QuizAddSubjectExtension;
             if (!File.Exists(path)) GenerateHowToAddQuizSubjectFile(path);
         }
 
@@ -182,7 +182,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// </summary>
         /// <param name="quizType">퀴즈의 유형</param>
         /// <param name="subjects">주제 목록</param>
-        /// <param name="requestQuizCount">요청하는 퀴즈 개수</param>
+        /// <param name="requestQuizCount">요청하는 퀴즈의 총 개수</param>
         /// <param name="minQuizCount">퀴즈 최소 개수</param>
         /// <param name="quizTimeLimit">퀴즈의 제한시간</param>
         /// <param name="bonusExperience">퀴즈 정답 시 획득 경험치</param>
@@ -199,31 +199,30 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
             if (requestQuizCount < minQuizCount)
             {
                 Thread.Sleep(SendMessageInterval);
-                SendMessage($"퀴즈 문항 수가 최솟값보다 작습니다. (최소: {minQuizCount}개, 현재: {requestQuizCount}개)");
-                Thread.Sleep(SendMessageInterval);
+                OnQuizCountInvalid(minQuizCount, requestQuizCount);
                 IsQuizTaskRunning = false;
                 return;
             }
-
-            var parameters = new Dictionary<string, object>();
-            parameters.Add("quizType", quizType);
-            parameters.Add("subjects", subjects);
-            parameters.Add("requestQuizCount", requestQuizCount);
-            parameters.Add("quizTimeLimit", quizTimeLimit);
-            parameters.Add("bonusExperience", bonusExperience);
-            parameters.Add("bonusMoney", bonusMoney);
-            parameters.Add("idleTimeLimit", idleTimeLimit);
-            parameters.Add("showSubject", showSubject);
-            parameters.Add("quizDataList", quizDataList);
 
             string[] notices = GetQuizNoticesFromFile();
             Thread.Sleep(SendMessageInterval);
             SendMessage($"{notices[BotRandom.Next(notices.Length)]}");
             Thread.Sleep(2000);
 
-            SendMessage("퀴즈를 시작합니다.");
-            Thread.Sleep(SendMessageInterval);
-            RunQuiz(parameters); // 기존에 Multi-Thread로 처리하던 것을 동일 Thread에서의 처리로 변경
+            bool isRandom = subjects.Length > 1 ? true : false;
+
+            OnQuizReady();
+            RunQuiz(quizType, subjects, requestQuizCount, quizTimeLimit, bonusExperience, bonusMoney, idleTimeLimit, showSubject, isRandom, quizDataList);
+
+            if (IsQuizTaskRunning) IsQuizTaskRunning = false;
+            Thread.Sleep(2000);
+            KakaoTalk.Message[] messages;
+            if (IsMainTaskRunning)
+            {
+                while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
+                LastMessageIndex = (messages.Length - 1) + 1;
+                OnQuizFinish();
+            }
         }
 
         /// <summary>
@@ -273,7 +272,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
             for (int i = 0; i < directories.Length; i++)
             {
                 /* 퀴즈 설정 값 로드 */
-                string path = directories[i] + "\\" + QuizSettingsName + QuizSettingsExtension;
+                string path = directories[i] + "\\" + QuizSettingsFileName + QuizSettingsFileExtension;
                 if (!File.Exists(path)) throw new ArgumentException($"{path} 파일이 누락되었습니다.");
                 var iniHelper = new IniHelper(path);
 
@@ -315,7 +314,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                 catch (Exception) { throw new ArgumentException($"객관식 선택지 개수에 잘못된 값이 설정되었습니다. (\"{value}\" << {path})"); }
 
                 /* 퀴즈 데이터 로드 */
-                path = directories[i] + "\\" + QuizDataName + QuizDataExtension;
+                path = directories[i] + "\\" + QuizDataFileName + QuizDataFileExtension;
                 if (!File.Exists(path)) throw new ArgumentException($"{path} 파일이 누락되었습니다.");
                 var xmlHelper = new XmlHelper(path);
 
@@ -329,11 +328,11 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                 regDateStr = null;
                 dataList = new List<Quiz.Data>();
                 var document = xmlHelper.ReadFile();
-                if (document.RootElementName != "list") throw new ArgumentException($"{QuizDataName + QuizDataExtension} 파일의 Parent Element의 이름은 \"list\"여야 합니다. (현재: {document.RootElementName})");
+                if (document.RootElementName != "list") throw new ArgumentException($"{QuizDataFileName + QuizDataFileExtension} 파일의 Parent Element의 이름은 \"list\"여야 합니다. (현재: {document.RootElementName})");
                 for (int j = 0; j < document.ChildNodes.Count; j++)
                 {
                     var node = document.ChildNodes[j];
-                    if (node.Name != "data") throw new ArgumentException($"{QuizDataName + QuizDataExtension} 파일의 Child Element의 이름은 \"data\"여야 합니다. ({j + 1}번째 Child: {node.Name})");
+                    if (node.Name != "data") throw new ArgumentException($"{QuizDataFileName + QuizDataFileExtension} 파일의 Child Element의 이름은 \"data\"여야 합니다. ({j + 1}번째 Child: {node.Name})");
 
                     foreach (XmlHelper.NodeData nodeData in node.DataList)
                     {
@@ -349,9 +348,9 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                             case "regDate": regDateStr = nodeData.Value; break;
                         }
                     }
-                    if (question == null) throw new ArgumentException($"{QuizDataName + QuizDataExtension} 파일의 {j + 1}번째 data에 question 요소가 누락되었습니다.");
-                    if (answer == null) throw new ArgumentException($"{QuizDataName + QuizDataExtension} 파일의 {j + 1}번째 data에 answer 요소가 누락되었습니다.");
-                    if (regDateStr == null) throw new ArgumentException($"{QuizDataName + QuizDataExtension} 파일의 {j + 1}번째 data에 regDate 요소가 누락되었습니다.");
+                    if (question == null) throw new ArgumentException($"{QuizDataFileName + QuizDataFileExtension} 파일의 {j + 1}번째 data에 question 요소가 누락되었습니다.");
+                    if (answer == null) throw new ArgumentException($"{QuizDataFileName + QuizDataFileExtension} 파일의 {j + 1}번째 data에 answer 요소가 누락되었습니다.");
+                    if (regDateStr == null) throw new ArgumentException($"{QuizDataFileName + QuizDataFileExtension} 파일의 {j + 1}번째 data에 regDate 요소가 누락되었습니다.");
                     else
                     {
                         int year = int.Parse(regDateStr.Substring(0, 4));
@@ -400,30 +399,43 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                 else if (value == "false") isIgnored = false;
                 else throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 isIgnored 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
 
-                if (!int.TryParse(node.GetData("experience"), out experience)) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 experience 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
-                if (!int.TryParse(node.GetData("level"), out level)) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 level 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
-                if (!int.TryParse(node.GetData("money"), out money)) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 money 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
-                if (!int.TryParse(node.GetData("generation"), out generation)) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 generation 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
+                if (node.GetData("experience") == null) experience = NewUserExperience;
+                else if (!int.TryParse(node.GetData("experience"), out experience)) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 experience 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
 
-                currentTitle = new Title(node.GetData("currentTitle"));
+                if (node.GetData("level") == null) level = NewUserLevel;
+                else if (!int.TryParse(node.GetData("level"), out level)) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 level 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
+
+                if (node.GetData("money") == null) money = NewUserMoney;
+                else if (!int.TryParse(node.GetData("money"), out money)) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 money 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
+
+                if (node.GetData("generation") == null) generation = NewUserGeneration;
+                else if (!int.TryParse(node.GetData("generation"), out generation)) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 generation 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
+
+                if (node.GetData("currentTitle") == null) currentTitle = NewUserCurrentTitle;
+                else currentTitle = new Title(node.GetData("currentTitle"));
 
                 availableTitles = new List<Title>();
-                tempArray = node.GetData("availableTitles").Split(',');
-                if (tempArray.Length == 0 || (tempArray.Length == 1 && tempArray[0] == "")) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 availableTitles 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
+                if (node.GetData("availableTitles") == null) availableTitles = NewUserAvailableTitles;
                 else
                 {
-                    for (int j = 0; j < tempArray.Length; j++)
+                    tempArray = node.GetData("availableTitles").Split(',');
+                    if (tempArray.Length == 0 || (tempArray.Length == 1 && tempArray[0] == "")) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 availableTitles 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
+                    else
                     {
-                        if (tempArray[j] == currentTitle.Name) break;
-                        else if (j == tempArray.Length - 1) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 availableTitles 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
+                        for (int j = 0; j < tempArray.Length; j++)
+                        {
+                            if (tempArray[j] == currentTitle.Name) break;
+                            else if (j == tempArray.Length - 1) throw new ArgumentException($"식별자 {Identifier} 봇의 유저 데이터 파일에 availableTitles 값이 잘못 설정되었습니다. ({i + 1}번째 항목)");
+                        }
                     }
+                    for (int j = 0; j < tempArray.Length; j++) availableTitles.Add(new Title(tempArray[j]));
                 }
-                for (int j = 0; j < tempArray.Length; j++) availableTitles.Add(new Title(tempArray[j]));
 
                 users.Add(new QuizUser(nickname, isIgnored, experience, level, money, generation, currentTitle, availableTitles));
             }
 
             Users = users;
+            SaveUserData();
         }
 
 
@@ -432,7 +444,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// </summary>
         protected override void SaveUserData()
         {
-            string path = ProfilePath + ProfileNameHeader + Identifier + ProfileExtension;
+            string path = ConfigPath + $"{Identifier}\\" + ProfileFileName + ProfileFileExtension;
 
             var helper = new XmlHelper(path);
             var nodeList = new List<XmlHelper.Node>();
@@ -466,7 +478,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <returns>퀴즈유저 객체</returns>
         protected new QuizUser AddNewUser(string userName)
         {
-            var user = new QuizUser(userName, NewUserIsIgnored, NewUserExperience, NewUserLevel, NewUserMoney, NewUserGeneration, NewUserCurrentTitle, NewUserAvailableTitles);
+            var user = new QuizUser(userName, IsNewUserIgnored, NewUserExperience, NewUserLevel, NewUserMoney, NewUserGeneration, NewUserCurrentTitle, NewUserAvailableTitles);
             Users.Add(user);
             SaveUserData();
             return user;
@@ -508,11 +520,12 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         [MethodImpl(MethodImplOptions.Synchronized)]
         private string[] ReadQuizNoticeFile()
         {
-            Directory.CreateDirectory(MessagePath);
-            string noticeFilePath = MessagePath + MessageQuizNoticeName + MessageQuizNoticeExtension;
-            if (!File.Exists(noticeFilePath)) GenerateQuizNoticeFile(noticeFilePath);
+            string path = ConfigPath + $"{Identifier}\\" + QuizNoticeFileName + QuizNoticeFileExtension;
+            Directory.CreateDirectory(path.Substring(0, path.LastIndexOf('\\')));
 
-            return File.ReadAllLines(noticeFilePath);
+            if (!File.Exists(path)) GenerateQuizNoticeFile(path);
+
+            return File.ReadAllLines(path);
         }
 
         /// <summary>
@@ -521,12 +534,9 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <param name="path">퀴즈 공지사항 파일 경로</param>
         private void GenerateQuizNoticeFile(string path)
         {
-            var message = new StringBuilder();
-            message.Append("; 여기에는 퀴즈 시작 전에 나오는 알림 메시지를 작성합니다.\n");
-            message.Append("; 세미콜론(;)으로 시작하는 문장은 주석으로 인식합니다.\n");
-            message.Append("공지 파일을 수정하여 유저들과 최신 소식을 공유해보세요.");
+            string message = Properties.Resources.quiz_notice;
 
-            File.WriteAllLines(path, message.ToString().Split('\n'), new UTF8Encoding(false));
+            File.WriteAllLines(path, message.Split(new string[] { "\r\n" }, StringSplitOptions.None), new UTF8Encoding(false));
         }
 
         /// <summary>
@@ -684,23 +694,20 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         }
 
         /// <summary>
-        /// 퀴즈 Thread의 실행부입니다.
+        /// 퀴즈 실행부입니다.
         /// </summary>
-        /// <param name="data">실행에 필요한 매개변수 목록</param>
-        protected void RunQuiz(object data)
+        /// <param name="quizType">퀴즈의 유형</param>
+        /// <param name="subjects">주제 목록</param>
+        /// <param name="requestQuizCount">요청하는 퀴즈의 총 개수</param>
+        /// <param name="quizTimeLimit">퀴즈의 제한시간</param>
+        /// <param name="bonusExperience">퀴즈 정답 시 획득 경험치</param>
+        /// <param name="bonusMoney">퀴즈 정답 시 획득 머니</param>
+        /// <param name="idleTimeLimit">퀴즈의 잠수 제한시간</param>
+        /// <param name="showSubject">주제 표시 여부</param>
+        /// <param name="isRandom">주제 랜덤 여부</param>
+        /// <param name="quizDataList">퀴즈 데이터 목록</param>
+        protected void RunQuiz(Quiz.TypeOption quizType, string[] subjects, int requestQuizCount, int quizTimeLimit, int bonusExperience, int bonusMoney, int idleTimeLimit, bool showSubject, bool isRandom, List<Quiz.Data> quizDataList)
         {
-            var parameters = (Dictionary<string, object>)data;
-            // var quizType = (Quiz.TypeOption)parameters["quizType"];
-            string[] subjects = (string[])parameters["subjects"];
-            int requestQuizCount = (int)parameters["requestQuizCount"];
-            int quizTimeLimit = (int)parameters["quizTimeLimit"];
-            int bonusExperience = (int)parameters["bonusExperience"];
-            int bonusMoney = (int)parameters["bonusMoney"];
-            int idleTimeLimit = (int)parameters["idleTimeLimit"];
-            bool showSubject = (bool)parameters["showSubject"];
-            bool isRandom = subjects.Length > 1 ? true : false;
-            List<Quiz.Data> quizDataList = (List<Quiz.Data>)parameters["quizDataList"];
-
             KakaoTalk.Message[] messages;
             KakaoTalk.MessageType messageType;
             string userName;
@@ -725,23 +732,11 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                 
                 while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
                 LastMessageIndex = (messages.Length - 1) + 1; // 뒤에 바로 SendMessage를 하므로, +1 해서 초기화
-                string randomText = isRandom ? "랜덤 " : "";
-                SendMessage($"[{randomText}" + (showSubject ? subject : "") + $" {currentQuiz}/{requestQuizCount}]{question}");
+                OnQuizQuestionSend(isRandom, showSubject, subject, currentQuiz, requestQuizCount, question);
 
-                if (beforeImagePath != null)
-                {
-                    Thread.Sleep(1500);
-                    SendImage(beforeImagePath);
-                }
+                if (beforeImagePath != null) OnQuizBeforeImageSend(beforeImagePath);
 
-                if (quizData.Choices != null)
-                {
-                    string choices = "";
-                    for (int j = 0; j < quizData.Choices.Count; j++) choices += $"{j + 1}. {quizData.Choices[j]}\n";
-                    choices = choices.Substring(0, choices.Length - 1);
-                    Thread.Sleep(2000);
-                    SendMessage(choices);
-                }
+                if (quizData.Choices != null) OnQuizChoicesSend(quizData.Choices);
 
                 int beginTick = Environment.TickCount;
                 bool shouldContinue = true;
@@ -750,14 +745,13 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                     Thread.Sleep(QuizScanInterval);
                     if (Environment.TickCount > lastInputTick + (idleTimeLimit * 1000))
                     {
-                        SendMessage("장시간 유효한 입력이 발생하지 않아 문제 풀이를 중단합니다. 잠시만 기다려주세요...");
                         IsQuizTaskRunning = false;
+                        OnQuizIdleLimitExceed();
                         break;
                     }
                     else if (Environment.TickCount > beginTick + (quizTimeLimit * 1000)) // 시간 제한 초과
                     {
-                        SendMessage($"정답자가 없어서 다음 문제로 넘어갑니다. 정답: {answer}");
-                        Thread.Sleep(1500);
+                        OnQuizTimeLimitExceed(answer);
                         shouldContinue = false;
                     }
                     else
@@ -787,9 +781,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                                     if (content == answer)
                                     {
                                         lastInputTick = Environment.TickCount;
-                                        SendMessage($"정답: {answer}, 정답자: [{user.CurrentTitle.Name}]{user.Nickname} (Lv. {user.Level}), 경험치: {user.Experience + bonusExperience}(+{bonusExperience}), 머니: {user.Money + bonusMoney}(+{bonusMoney})");
-                                        UpdateUserProfile(user, bonusExperience, bonusMoney);
-                                        Thread.Sleep(1500);
+                                        OnQuizAnswerCorrect(answer, user, bonusExperience, bonusMoney);
                                         shouldContinue = false;
                                         break;
                                     }
@@ -801,32 +793,146 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                     }
                     if (IsQuizTaskRunning && !shouldContinue)
                     {
-                        if (afterImagePath != null)
-                        {
-                            SendImage(afterImagePath);
-                            Thread.Sleep(1500);
-                        }
-                        if (explanation != null)
-                        {
-                            SendMessage($"[해설]{explanation}");
-                            Thread.Sleep(3500);
-                        }
+                        if (afterImagePath != null) OnQuizAfterImageSend(afterImagePath);
+                        if (explanation != null) OnQuizExplanationSend(explanation);
                         else Thread.Sleep(1500);
                     }
                 }
                 if (!IsQuizTaskRunning) break;
                 else if (i == requestQuizCount - 1)
                 {
-                    SendMessage("문제를 다 풀었습니다. 잠시만 기다려주세요...");
+                    OnQuizAllCompleted();
                     IsQuizTaskRunning = false;
                 }
             }
-            if (IsQuizTaskRunning) IsQuizTaskRunning = false;
-            Thread.Sleep(2000);
-            while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
-            LastMessageIndex = (messages.Length - 1) + 1;
-            SendMessage("퀴즈가 종료되었습니다. \"!명령어\"를 통하여 기능을 확인하세요.");
+        }
+
+        /// <summary>
+        /// 요청한 퀴즈 개수가 부족할 경우 추가적으로 할 행동을 지정합니다. 기본 설정은 "SendMessage 메서드를 통한 퀴즈 개수 부족 알림"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        /// <param name="minQuizCount">퀴즈 최소 개수</param>
+        /// <param name="requestQuizCount">요청하는 퀴즈의 총 개수</param>
+        protected virtual void OnQuizCountInvalid(int minQuizCount, int requestQuizCount)
+        {
+            SendMessage($"퀴즈 문항 수가 최솟값보다 작습니다. (최소: {minQuizCount}개, 현재: {requestQuizCount}개)");
             Thread.Sleep(SendMessageInterval);
+        }
+
+        /// <summary>
+        /// 퀴즈의 실행 준비가 완료된 시점에 추가적으로 할 행동을 지정합니다. 기본 설정은 "SendMessage 메서드를 통한 퀴즈 시작 알림"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        protected virtual void OnQuizReady()
+        {
+            SendMessage("퀴즈를 시작합니다.");
+            Thread.Sleep(SendMessageInterval);
+        }
+
+        /// <summary>
+        /// 퀴즈가 전부 끝난 시점에 추가적으로 할 행동을 지정합니다. 기본 설정은 "SendMessage 메서드를 통한 퀴즈 종료 알림"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        protected virtual void OnQuizFinish()
+        {
+            SendMessage("퀴즈가 종료되었습니다.");
+            Thread.Sleep(SendMessageInterval);
+        }
+
+        /// <summary>
+        /// 퀴즈의 문제를 전송하는 시점에 할 행동을 지정합니다. 기본 설정은 "SendMessage 메서드를 통한 퀴즈 주제 및 문제 전송"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        /// <param name="isRandom">주제 랜덤 여부</param>
+        /// <param name="showSubject">주제 표시 여부</param>
+        /// <param name="subject">현재 문항의 주제</param>
+        /// <param name="currentQuiz">현재 문항 번호</param>
+        /// <param name="requestQuizCount">요청하는 퀴즈의 총 개수</param>
+        /// <param name="question">현재 문항의 문제</param>
+        protected virtual void OnQuizQuestionSend(bool isRandom, bool showSubject, string subject, int currentQuiz, int requestQuizCount, string question)
+        {
+            string randomText = isRandom ? "랜덤 " : "";
+            SendMessage($"[{randomText}" + (showSubject ? subject : "") + $" {currentQuiz}/{requestQuizCount}]{question}");
+        }
+
+        /// <summary>
+        /// 퀴즈의 문제를 풀기 전 이미지를 전송하는 시점에 할 행동을 지정합니다. 기본 설정은 "SendImage 메서드를 통한 이미지 전송"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        /// <param name="beforeImagePath">문제 풀이 전 전송하는 이미지</param>
+        protected virtual void OnQuizBeforeImageSend(string beforeImagePath)
+        {
+            Thread.Sleep(1500);
+            SendImage(beforeImagePath);
+        }
+
+        /// <summary>
+        /// 퀴즈의 선택지를 전송하는 시점에 할 행동을 지정합니다. 기본 설정은 "SendMessage 메서드를 통한 선택지 전송"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        /// <param name="choices"></param>
+        protected virtual void OnQuizChoicesSend(List<string> choices)
+        {
+            string content = "";
+            for (int j = 0; j < choices.Count; j++) content += $"{j + 1}. {choices[j]}\n";
+            content = content.Substring(0, content.Length - 1);
+
+            Thread.Sleep(2000);
+            SendMessage(content);
+        }
+
+        /// <summary>
+        /// 퀴즈의 잠수 제한 시간이 초과되었을 경우 할 행동을 지정합니다. 기본 설정은 "SendMessage 메서드를 통한 퀴즈 중단 메시지 전송"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        protected virtual void OnQuizIdleLimitExceed()
+        {
+            SendMessage("장시간 유효한 입력이 발생하지 않아 문제 풀이를 중단합니다. 잠시만 기다려주세요...");
+        }
+
+        /// <summary>
+        /// 퀴즈 풀이의 제한 시간이 초과되었을 경우 할 행동을 지정합니다. 기본 설정은 "SendMessage 메서드를 통한 안내 문구 전송"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        /// <param name="answer">퀴즈의 정답</param>
+        protected virtual void OnQuizTimeLimitExceed(string answer)
+        {
+            SendMessage($"정답자가 없어서 다음 문제로 넘어갑니다. 정답: {answer}");
+            Thread.Sleep(1500);
+        }
+
+        /// <summary>
+        /// 퀴즈의 정답을 맞힌 시점에 할 행동을 지정합니다. 기본 설정은 "SendMessage 메서드를 통한 안내 메시지 전송 및 유저 Profile 업데이트"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        /// <param name="answer">퀴즈의 정답</param>
+        /// <param name="answeredUser">정답을 맞힌 유저</param>
+        /// <param name="bonusExperience">퀴즈 정답 시 획득 경험치</param>
+        /// <param name="bonusMoney">퀴즈 정답 시 획득 머니</param>
+        protected virtual void OnQuizAnswerCorrect(string answer, QuizUser answeredUser, int bonusExperience, int bonusMoney)
+        {
+            SendMessage($"정답: {answer}, 정답자: [{answeredUser.CurrentTitle.Name}]{answeredUser.Nickname} (Lv. {answeredUser.Level}), 경험치: {answeredUser.Experience + bonusExperience}(+{bonusExperience}), 머니: {answeredUser.Money + bonusMoney}(+{bonusMoney})");
+            UpdateUserProfile(answeredUser, bonusExperience, bonusMoney);
+            Thread.Sleep(1500);
+        }
+
+        /// <summary>
+        /// 퀴즈의 문제를 푼 후 이미지를 전송하는 시점에 할 행동을 지정합니다. 기본 설정은 "SendImage 메서드를 통한 이미지 전송"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        /// <param name="afterImagePath">문제 풀이 후 전송하는 이미지</param>
+        protected virtual void OnQuizAfterImageSend(string afterImagePath)
+        {
+            SendImage(afterImagePath);
+            Thread.Sleep(1500);
+        }
+
+        /// <summary>
+        /// 퀴즈의 해설을 전송하는 시점에 할 행동을 지정합니다. 기본 설정은 "SendMessage 메서드를 통한 해설 메시지 전송"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        /// <param name="explanation">퀴즈의 설명</param>
+        protected virtual void OnQuizExplanationSend(string explanation)
+        {
+            SendMessage($"[해설]{explanation}");
+            Thread.Sleep(3500);
+        }
+
+        /// <summary>
+        /// 퀴즈 문제를 모두 푼 시점에 할 행동을 지정합니다. 기본 설정은 "SendMessage 메서드를 통한 안내 메시지 전송"입니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        protected virtual void OnQuizAllCompleted()
+        {
+            SendMessage("문제를 다 풀었습니다. 잠시만 기다려주세요...");
         }
 
         /// <summary>
@@ -845,76 +951,9 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         [MethodImpl(MethodImplOptions.Synchronized)]
         private void GenerateHowToAddQuizSubjectFile(string path)
         {
-            var message = new StringBuilder();
-            message.Append("퀴즈봇을 돌리기 위해서는, 반드시 해당 주제에 대한 퀴즈 데이터 폴더 및 내부 파일이 존재해야 합니다.\n");
-            message.Append("폴더 및 파일을 추가하는 방법은 아래와 같습니다.\n\n");
+            string message = Properties.Resources.how_to_add_quiz_subjects;
 
-            message.Append("◎ 폴더 생성\n");
-            message.Append("- data/quiz 경로에 폴더를 하나 생성합니다.\n");
-            message.Append("(폴더 이름은 아무렇게나 해도 됩니다)\n\n");
-
-            message.Append("◎ settings.ini 파일 추가\n");
-            message.Append("생성한 폴더 내에 settings.ini라는 이름으로 파일을 생성합니다. 인코딩은 유니코드(= UTF-16)로 합니다.\n\n");
-
-            message.Append("파일 최상단에 \"[Settings]\" 입력 (ini 파일의 섹션 값)\n\n");
-
-            message.Append("- \"quizType = \" 뒤에 퀴즈 유형 입력 (\"일반\" 또는 \"초성\")\n\n");
-
-            message.Append("- \"mainSubject = \" 뒤에 주제 입력\n\n");
-
-            message.Append("- \"childSubjects = \" 뒤에 하위주제의 목록을 쉼표(,)로 구분하여 입력합니다. (하위주제가 없으면 입력하지 않아도 됩니다.)\n\n");
-
-            message.Append("- \"isCaseSensitive = \" 뒤에 true 또는 false 입력\n");
-            message.Append("(만약 정답에 알파벳이 포함되어 있는 경우, 대소문자를 구분해서 정답 처리하고 싶다면 true로, 그렇지 않다면 false를 입력하면 됩니다.)\n\n");
-
-            message.Append("- \"useMultiChoice = \" 뒤에 true 또는 false 입력\n");
-            message.Append("(만약 이 주제의 문제들을 객관식으로 하고 싶다면 true를, 아니라면 false를 입력하면 됩니다.)\n\n");
-
-            message.Append("- \"choiceExtractMethod = \" 뒤에 RICS 또는 RAPT 입력\n");
-            message.Append("(choiceExtractMethod는 선택지 추출 방식을 의미합니다.)\n");
-            message.Append("(RICS : Random In Current Subject, 선택된 주제 내에서 랜덤으로 선택지를 추출하는 방식)\n");
-            message.Append("(RAPT : Random According to Predefined Types, 각 답마다 타입을 지정해 놓고, 같은 타입 내에서만 랜덤으로 선택지를 추출하는 방식)\n\n");
-
-            message.Append("- \"choiceCount = \" 뒤에 원하는 객관식 선택지 개수를 입력합니다.\n");
-            message.Append("(객관식이 아니라도 0을 입력해야 합니다.)\n\n");
-
-            message.Append("◎ settings.ini 파일 내용 예시\n");
-            message.Append("[Settings]\n");
-            message.Append("quizType = 일반\n");
-            message.Append("mainSubject = 속담\n");
-            message.Append("childSubjects = \n");
-            message.Append("isCaseSensitive = false\n");
-            message.Append("useMultiChoice = false\n");
-            message.Append("choiceExtractMethod = \n");
-            message.Append("choiceCount = \n\n");
-
-            message.Append("◎ data.xml 파일 추가\n");
-            message.Append("- settings.ini 파일과 같은 폴더에 data.xml이라는 이름으로 파일을 생성합니다. 인코딩은 UTF-8 without BOM으로 합니다.\n\n");
-
-            message.Append("- list -> data 엘리먼트 안에 원하는 내용을 작성합니다.\n");
-            message.Append("가능한 요소는 question, answer, explanation, type, beforeImagePath, afterImagePath, childSubject, regDate이며, 반드시 필요한 요소는 question, answer, regDate입니다.\n\n");
-
-            message.Append("- data.xml 파일 내용 예시\n");
-            message.Append("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n");
-            message.Append("<list>\n");
-            message.Append("  <data>\n");
-            message.Append("    <question>ㄱㅂㄹㄴ</question>\n");
-            message.Append("    <answer>가보로네</answer>\n");
-            message.Append("    <regDate>2019-08-04 17:40:48</regDate>\n");
-            message.Append("  </data>\n");
-            message.Append("</list>\n\n");
-
-            message.Append("- 각 요소에 대한 설명\n");
-            message.Append("question : 퀴즈에서 사용될 질문 내용 (필수)\n");
-            message.Append("answer : 퀴즈에서 사용될 정답 내용 (필수)\n");
-            message.Append("explanation : 퀴즈에서 사용될 설명 내용 (선택)\n");
-            message.Append("type : 퀴즈에서 객관식 - RAPT 방식 사용 시 필요한 유형 값 (선택)\n");
-            message.Append("beforeImagePath : 퀴즈에서 문제 출제 전에 보여줄 이미지 파일의 경로 (선택, 에시 : res/image/pokemon/피카츄.png)\n");
-            message.Append("afterImagePath : 퀴즈에서 문제 출제 후에 보여줄 이미지 파일의 경로 (선택, 예시 : res/image/pokemon/꼬부기.png)\n");
-            message.Append("childSubject : 퀴즈의 하위주제 값 (선택)\n");
-            message.Append("regDate : 이 퀴즈 항목을 등록한 시각 (필수, 형식 : yyyy-mm-dd hh:mm:ss)\n\n");
-
-            File.WriteAllLines(path, message.ToString().Split('\n'), Encoding.Unicode);
+            File.WriteAllLines(path, message.Split(new string[] { "\r\n" }, StringSplitOptions.None), Encoding.Unicode);
         }
     }
 }

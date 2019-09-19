@@ -161,6 +161,7 @@ namespace Less.API.NetFramework.KakaoTalkAPI
                     WinAPI.DeleteObject(hDestBitmap);
                     WinAPI.DeleteObject(hSourceDC);
                     WinAPI.DeleteObject(hSourceBitmap);
+                    tempImage.Dispose();
                     throw new CannotOpenException();
                 }
                 WinAPI.EmptyClipboard();

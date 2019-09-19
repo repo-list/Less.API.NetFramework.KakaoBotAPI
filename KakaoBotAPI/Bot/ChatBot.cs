@@ -36,47 +36,52 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <summary>
         /// Well-Known 파일 확장자들(XML, INI 등)을 제외한 데이터 파일들의 기본 확장자
         /// </summary>
-        protected const string DataExtension = ".dat";
+        protected const string DataFileDefaultExtension = ".dat";
 
         /// <summary>
-        /// 각 채팅봇 인스턴스에 대한 Profile 파일들이 저장되는 경로
+        /// 설정 파일들이 위치하는 최상단 경로
         /// </summary>
-        protected const string ProfilePath = DataPath + @"profile\";
+        protected const string ConfigPath = @"config\";
 
         /// <summary>
-        /// Profile 파일 이름의 앞부분
+        /// 설정 파일들의 기본 확장자
         /// </summary>
-        protected const string ProfileNameHeader = "profile_";
+        protected const string ConfigFileDefaultExtension = ".cfg";
+
+        /// <summary>
+        /// Profile 파일의 이름
+        /// </summary>
+        protected const string ProfileFileName = "profile";
 
         /// <summary>
         /// Profile 파일의 확장자
         /// </summary>
-        protected const string ProfileExtension = XmlHelper.FileExtension;
+        protected const string ProfileFileExtension = XmlHelper.FileExtension;
 
         /// <summary>
-        /// 바로가기 명령어를 열거한 파일 이름의 앞부분
+        /// 바로가기 명령어를 열거한 파일의 이름
         /// </summary>
-        protected const string ShortcutNameHeader = "cmd_shortcuts";
+        protected const string ShortcutFileName = "cmd_shortcuts";
 
         /// <summary>
         /// 바로가기 명령어를 열거한 파일의 확장자
         /// </summary>
-        protected const string ShortcutExtension = DataExtension;
+        protected const string ShortcutFileExtension = ConfigFileDefaultExtension;
 
         /// <summary>
-        /// 채팅창에 보내는 메시지와 관련된 파일들이 위치하는 경로
+        /// 봇의 금지어-대체어 목록을 열거한 파일의 이름
         /// </summary>
-        protected const string MessagePath = DataPath + @"message\";
-
-        /// <summary>
-        /// 봇의 금지어-대체어 목록을 열거한 파일 이름의 앞부분
-        /// </summary>
-        protected const string MessageBotLimitedWordsName = "bot_limitedWords_";
+        protected const string BotLimitedWordsFileName = "bot_limitedWords";
 
         /// <summary>
         /// 봇의 금지어-대체어 목록을 열거한 파일의 확장자
         /// </summary>
-        protected const string MessageBotLimitedWordsExtension = IniHelper.FileExtension;
+        protected const string BotLimitedWordsFileExtension = IniHelper.FileExtension;
+
+        /// <summary>
+        /// 텍스트 파일의 확장자
+        /// </summary>
+        protected const string TextFileExtension = ".txt";
 
         /// <summary>
         /// 바로가기 명령어 목록을 담고 있는 배열<para/>
@@ -101,7 +106,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// true : 채팅을 무시합니다.<para/>
         /// false : 채팅을 무시하지 않습니다.
         /// </summary>
-        protected static bool NewUserIsIgnored = false;
+        protected static bool IsNewUserIgnored = false;
 
         /// <summary>
         /// 채팅방의 이름<para/>
@@ -367,8 +372,9 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         [MethodImpl(MethodImplOptions.Synchronized)]
         protected XmlHelper.Document GetUserDataDocument()
         {
-            string path = ProfilePath + ProfileNameHeader + Identifier + ProfileExtension;
+            string path = ConfigPath + $"{Identifier}\\" + ProfileFileName + ProfileFileExtension;
             Directory.CreateDirectory(path.Substring(0, path.LastIndexOf('\\')));
+
             var helper = new XmlHelper(path);
             if (!File.Exists(path)) helper.CreateFile("list", new List<XmlHelper.Node>());
 
@@ -381,7 +387,8 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// </summary>
         protected virtual void SaveUserData()
         {
-            string path = ProfilePath + ProfileNameHeader + Identifier + ProfileExtension;
+            string path = ConfigPath + $"{Identifier}\\" + ProfileFileName + ProfileFileExtension;
+            Directory.CreateDirectory(path.Substring(0, path.LastIndexOf('\\')));
 
             var helper = new XmlHelper(path);
             var nodeList = new List<XmlHelper.Node>();
@@ -391,7 +398,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
             {
                 node = new XmlHelper.Node("user");
                 node.AddData("nickname", Users[i].Nickname);
-                node.AddData("isIgnored", Users[i].IsIgnored);
+                node.AddData("isIgnored", Users[i].IsIgnored ? "true" : "false");
 
                 nodeList.Add(node);
             }
@@ -421,7 +428,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <returns>유저 객체</returns>
         protected virtual User AddNewUser(string userName)
         {
-            var user = new User(userName, NewUserIsIgnored);
+            var user = new User(userName, IsNewUserIgnored);
             Users.Add(user);
             SaveUserData();
             return user;
@@ -540,8 +547,9 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         [MethodImpl(MethodImplOptions.Synchronized)]
         private string[] ReadShortcutFile()
         {
-            string path = DataPath + ShortcutNameHeader + ShortcutExtension;
+            string path = ConfigPath + $"{Identifier}\\" + ShortcutFileName + ShortcutFileExtension;
             Directory.CreateDirectory(path.Substring(0, path.LastIndexOf('\\')));
+
             if (!File.Exists(path)) GenerateShortcutFile(path);
             return File.ReadAllText(path).Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
         }
@@ -552,13 +560,9 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <param name="path">바로가기 파일의 경로</param>
         private void GenerateShortcutFile(string path)
         {
-            var message = new StringBuilder();
-            message.Append("; 바로가기 명령어 (줄인 명령어 = 실제 명령어)\n");
-            message.Append("; 예시 : !포켓몬 1 = !퀴즈 초성 포켓몬-1세대\n");
-            message.Append("; 영어의 경우 대소문자를 구분하지 않습니다.\n");
-            message.Append("; 세미콜론(;)으로 시작하는 문장은 주석으로 인식합니다.");
+            string message = Properties.Resources.cmd_shortcuts;
 
-            File.WriteAllLines(path, message.ToString().Split('\n'), new UTF8Encoding(false));
+            File.WriteAllLines(path, message.Split(new string[] { "\r\n" }, StringSplitOptions.None), new UTF8Encoding(false));
         }
 
         /// <summary>
@@ -598,8 +602,9 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         [MethodImpl(MethodImplOptions.Synchronized)]
         private string[] ReadLimitedWordsFile()
         {
-            Directory.CreateDirectory(MessagePath);
-            string path = MessagePath + MessageBotLimitedWordsName + Identifier + MessageBotLimitedWordsExtension;
+            string path = ConfigPath + $"{Identifier}\\" + BotLimitedWordsFileName + BotLimitedWordsFileExtension;
+            Directory.CreateDirectory(path.Substring(0, path.LastIndexOf('\\')));
+
             if (!File.Exists(path)) GenerateBotLimitedWordsFile(path);
 
             return File.ReadAllLines(path);
@@ -612,13 +617,9 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         [MethodImpl(MethodImplOptions.Synchronized)]
         private void GenerateBotLimitedWordsFile(string path)
         {
-            var message = new StringBuilder();
-            message.Append("; 금지어 및 대체어 목록을 \"[Contents]\" 아래에 입력합니다.\n");
-            message.Append("; (예: 금지어 = 대체어)\n");
-            message.Append("; 세미콜론(;)으로 시작하는 문장은 주석으로 인식합니다.\n");
-            message.Append("[Contents]");
+            string message = Properties.Resources.bot_limitedWords;
 
-            File.WriteAllLines(path, message.ToString().Split('\n'), Encoding.Unicode);
+            File.WriteAllLines(path, message.Split(new string[] { "\r\n" }, StringSplitOptions.None), Encoding.Unicode);
         }
 
         /// <summary>

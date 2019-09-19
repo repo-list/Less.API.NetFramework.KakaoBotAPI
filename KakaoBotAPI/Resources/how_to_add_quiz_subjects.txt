@@ -1,0 +1,67 @@
+퀴즈봇을 돌리기 위해서는, 반드시 해당 주제에 대한 퀴즈 데이터 폴더 및 내부 파일이 존재해야 합니다.
+폴더 및 파일을 추가하는 방법은 아래와 같습니다.
+
+◎ 폴더 생성
+- data/quiz 경로에 폴더를 하나 생성합니다.
+(폴더 이름은 아무렇게나 해도 됩니다)
+
+◎ settings.ini 파일 추가
+생성한 폴더 내에 settings.ini라는 이름으로 파일을 생성합니다. 인코딩은 유니코드(= UTF-16)로 합니다.
+
+파일 최상단에 "[Settings]" 입력 (ini 파일의 섹션 값)
+
+- "quizType = " 뒤에 퀴즈 유형 입력 ("일반" 또는 "초성")
+
+- "mainSubject = " 뒤에 주제 입력
+
+- "childSubjects = " 뒤에 하위주제의 목록을 쉼표(,)로 구분하여 입력합니다. (하위주제가 없으면 입력하지 않아도 됩니다.)
+
+- "isCaseSensitive = " 뒤에 true 또는 false 입력
+(만약 정답에 알파벳이 포함되어 있는 경우, 대소문자를 구분해서 정답 처리하고 싶다면 true로, 그렇지 않다면 false를 입력하면 됩니다.)
+
+- "useMultiChoice = " 뒤에 true 또는 false 입력
+(만약 이 주제의 문제들을 객관식으로 하고 싶다면 true를, 아니라면 false를 입력하면 됩니다.)
+
+- "choiceExtractMethod = " 뒤에 RICS 또는 RAPT 입력
+(choiceExtractMethod는 선택지 추출 방식을 의미합니다.)
+(RICS : Random In Current Subject, 선택된 주제 내에서 랜덤으로 선택지를 추출하는 방식)
+(RAPT : Random According to Predefined Types, 각 답마다 타입을 지정해 놓고, 같은 타입 내에서만 랜덤으로 선택지를 추출하는 방식)
+
+- "choiceCount = " 뒤에 원하는 객관식 선택지 개수를 입력합니다.
+(객관식이 아니라도 0을 입력해야 합니다.)
+
+◎ settings.ini 파일 내용 예시
+[Settings]
+quizType = 일반
+mainSubject = 속담
+childSubjects = 
+isCaseSensitive = false
+useMultiChoice = false
+choiceExtractMethod = 
+choiceCount = 
+
+◎ data.xml 파일 추가
+- settings.ini 파일과 같은 폴더에 data.xml이라는 이름으로 파일을 생성합니다. 인코딩은 UTF-8 without BOM으로 합니다.
+
+- list -> data 엘리먼트 안에 원하는 내용을 작성합니다.
+가능한 요소는 question, answer, explanation, type, beforeImagePath, afterImagePath, childSubject, regDate이며, 반드시 필요한 요소는 question, answer, regDate입니다.
+
+- data.xml 파일 내용 예시
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<list>
+  <data>
+    <question>ㄱㅂㄹㄴ</question>
+    <answer>가보로네</answer>
+    <regDate>2019-08-04 17:40:48</regDate>
+  </data>
+</list>
+
+- 각 요소에 대한 설명
+question : 퀴즈에서 사용될 질문 내용 (필수)
+answer : 퀴즈에서 사용될 정답 내용 (필수)
+explanation : 퀴즈에서 사용될 설명 내용 (선택)
+type : 퀴즈에서 객관식 - RAPT 방식 사용 시 필요한 유형 값 (선택)
+beforeImagePath : 퀴즈에서 문제 출제 전에 보여줄 이미지 파일의 경로 (선택, 에시 : res/image/pokemon/피카츄.png)
+afterImagePath : 퀴즈에서 문제 출제 후에 보여줄 이미지 파일의 경로 (선택, 예시 : res/image/pokemon/꼬부기.png)
+childSubject : 퀴즈의 하위주제 값 (선택)
+regDate : 이 퀴즈 항목을 등록한 시각 (필수, 형식 : yyyy-mm-dd hh:mm:ss)

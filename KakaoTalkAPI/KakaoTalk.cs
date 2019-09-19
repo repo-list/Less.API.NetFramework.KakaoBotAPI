@@ -10,7 +10,7 @@
  * 
  * @ ProductName : Less.API.NetFramework.KakaoTalkAPI
  * 
- * @ Version : 1.0.2
+ * @ Version : 1.0.3
  * 
  * @ License : The Non-Profit Open Software License v3.0 (NPOSL-3.0) (https://opensource.org/licenses/NPOSL-3.0)
  * -> 이 API에는 NPOSL-3.0 오픈소스 라이선스가 적용되며, 사용자는 절대 영리적 목적으로 이 API를 사용해서는 안 됩니다.

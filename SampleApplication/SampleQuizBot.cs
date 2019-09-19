@@ -111,7 +111,7 @@ namespace SampleApplication
 
             var quizType = Quiz.TypeOption.General; // 퀴즈의 유형 (일반 퀴즈)
             string[] subjects = new string[] { "속담" }; // 퀴즈 주제 목록
-            int requestQuizCount = 5; // 요청할 퀴즈 개수
+            int requestQuizCount = 5; // 요청할 퀴즈의 총 개수
             int minQuizCount = 3; // 최소 퀴즈 개수 (만약 데이터 파일에 넣어둔 문제 수가 이 값보다 작으면, 퀴즈가 실행되지 않음)
             int quizTimeLimit = 20; // 퀴즈 문제 하나당 풀이 제한시간 (초 단위)
             int bonusExperience = 10; // 퀴즈 정답 시 추가로 받는 경험치
