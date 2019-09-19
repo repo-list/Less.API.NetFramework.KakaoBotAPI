@@ -3,7 +3,7 @@ An advanced application of the previous publish, "KakaoTalk API". <br/>
 -> 기존에 출시했던 "KakaoTalk API"의 응용 버전입니다.
 
 @ IMPORTANT : PLEASE MIGRATE TO VERSION 1.1.0 OR HIGHER. THIS PATCH INCLUDES COUPLE OF BUG FIXES AND MAJOR CHANGES.
-- -> 1.1.0 이상 버전으로 migrate해주시기 바랍니다. 이 패치에는 다수의 버그 수정 및 중요한 변경 사항이 포함되어 있습니다.
+-> 1.1.0 이상 버전으로 migrate해주시기 바랍니다. 이 패치에는 다수의 버그 수정 및 중요한 변경 사항이 포함되어 있습니다.
 
 @ Author : Eric Kim
 
