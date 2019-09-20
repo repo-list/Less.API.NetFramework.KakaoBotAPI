@@ -213,7 +213,6 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <returns>전송의 성공 여부</returns>
         public bool SendMessage(string message)
         {
-            if (!IsMainTaskRunning) return false;
             for (int i = 0; i < LimitedWords.Count; i++)
             {
                 if (message.Contains(LimitedWords[i]) && !ReplacedWords[i].Contains(LimitedWords[i])) message = message.Replace(LimitedWords[i], ReplacedWords[i]);
@@ -231,7 +230,6 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <returns>전송의 성공 여부</returns>
         public bool SendImage(string path)
         {
-            if (!IsMainTaskRunning) return false;
             Window.SendImageUsingClipboard(path);
 
             return true;
@@ -245,7 +243,6 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <returns>전송의 성공 여부</returns>
         public bool SendEmoticon(KakaoTalk.Emoticon emoticon)
         {
-            if (!IsMainTaskRunning) return false;
             Window.SendEmoticon(emoticon);
 
             return true;
@@ -265,13 +262,11 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
 
             KakaoTalk.Message[] messages;
             while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
-            int messageCount = messages.Length;
 
-            string notice = GetStartNotice();
-            if (notice != null) Window.SendText(notice);
-            Thread.Sleep(SendMessageInterval);
+            SendMainTaskStartNotice();
 
-            LastMessageIndex = (messageCount - 1) + 1; // (messageCount - 1) + greetingMessage
+            while ((messages = Window.GetMessagesUsingClipboard()) == null) Thread.Sleep(GetMessageInterval);
+            LastMessageIndex = messages.Length - 1;
             MainTaskRunner = new Thread(new ThreadStart(RunMain));
             MainTaskRunner.Start();
         }
@@ -282,11 +277,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         protected void StopMainTask()
         {
             IsMainTaskRunning = false;
-
-            string notice = GetStopNotice();
-            if (notice != null) Window.SendText(notice);
-            Thread.Sleep(SendMessageInterval);
-
+            SendMainTaskStopNotice();
             Window.Dispose();
         }
 
@@ -435,15 +426,31 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         }
 
         /// <summary>
+        /// 봇이 본격적으로 가동되기 전 수행할 행동을 지정합니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        protected virtual void SendMainTaskStartNotice()
+        {
+            Window.SendText("채팅봇을 시작합니다.");
+            Thread.Sleep(SendMessageInterval);
+        }
+
+        /// <summary>
+        /// 봇이 종료될 때 수행할 행동을 지정합니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        protected virtual void SendMainTaskStopNotice()
+        {
+            Window.SendText("채팅봇을 종료합니다.");
+            Thread.Sleep(SendMessageInterval);
+        }
+
+        /// <summary>
         /// 날짜 변경 메시지가 출력되는 시점에 수행할 행동을 지정합니다. 필요할 경우 이 메서드를 오버라이드하여 사용하십시오.
         /// </summary>
         /// <param name="content">바뀐 요일에 대한 정보</param>
         /// <param name="sendTime">요일 정보가 채팅창에 출력된 시각</param>
         protected virtual void SendDateChangeNotice(string content, DateTime sendTime)
         {
-            string notice = GetDateChangeNotice(content, sendTime);
-
-            if (notice != null) Window.SendText(notice);
+            Window.SendText($"날짜가 변경되었습니다. ({content})");
             Thread.Sleep(SendMessageInterval);
         }
 
@@ -454,9 +461,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <param name="sendTime">입장한 시각</param>
         protected virtual void SendUserJoinNotice(string userName, DateTime sendTime)
         {
-            string notice = GetUserJoinNotice(userName, sendTime);
-
-            if (notice != null) Window.SendText(notice);
+            Window.SendText($"{userName}님이 입장하셨습니다.");
             Thread.Sleep(SendMessageInterval);
         }
 
@@ -467,9 +472,7 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// <param name="sendTime">퇴장한 시각</param>
         protected virtual void SendUserLeaveNotice(string userName, DateTime sendTime)
         {
-            string notice = GetUserLeaveNotice(userName, sendTime);
-
-            if (notice != null) Window.SendText(notice);
+            Window.SendText($"{userName}님이 퇴장하셨습니다.");
             Thread.Sleep(SendMessageInterval);
         }
 
@@ -626,42 +629,6 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         /// 본격적으로 메시지 분석을 시작하기 전에, 필요한 초기화 작업을 진행할 수 있도록 작성된 메서드입니다.
         /// </summary>
         protected abstract void InitializeBotSettings();
-
-        /// <summary>
-        /// 봇이 시작될 때 채팅창에 보낼 안내 메시지를 반환 값으로 지정합니다. null을 반환하면 안내 메시지가 전송되지 않습니다.
-        /// </summary>
-        /// <returns>봇이 시작될 때 전송할 메시지</returns>
-        protected abstract string GetStartNotice();
-
-        /// <summary>
-        /// 봇이 종료될 때 채팅창에 보낼 안내 메시지를 반환 값으로 지정합니다. null을 반환하면 안내 메시지가 전송되지 않습니다.
-        /// </summary>
-        /// <returns>봇이 종료될 때 전송할 메시지</returns>
-        protected abstract string GetStopNotice();
-
-        /// <summary>
-        /// 날짜 변경 메시지가 출력되는 시점에 채팅창에 보낼 안내 메시지를 반환 값으로 지정합니다. null을 반환하면 안내 메시지가 전송되지 않습니다.
-        /// </summary>
-        /// <param name="content">바뀐 요일에 대한 정보</param>
-        /// <param name="sendTime">요일 정보가 채팅창에 출력된 시각</param>
-        /// <returns>날짜가 바뀔 경우 전송할 메시지</returns>
-        protected abstract string GetDateChangeNotice(string content, DateTime sendTime);
-
-        /// <summary>
-        /// 유저 입장 시 채팅창에 보낼 안내 메시지를 반환 값으로 지정합니다. null을 반환하면 안내 메시지가 전송되지 않습니다.
-        /// </summary>
-        /// <param name="userName">입장한 유저의 닉네임</param>
-        /// <param name="sendTime">입장한 시각</param>
-        /// <returns>유저가 입장할 경우 전송할 메시지</returns>
-        protected abstract string GetUserJoinNotice(string userName, DateTime sendTime);
-
-        /// <summary>
-        /// 유저 퇴장 시 채팅창에 보낼 안내 메시지를 반환 값으로 지정합니다. null을 반환하면 안내 메시지가 전송되지 않습니다.
-        /// </summary>
-        /// <param name="userName">퇴장한 유저의 닉네임</param>
-        /// <param name="sendTime">퇴장한 시각</param>
-        /// <returns>유저가 퇴장할 경우 전송할 메시지</returns>
-        protected abstract string GetUserLeaveNotice(string userName, DateTime sendTime);
 
         /// <summary>
         /// 본격적인 메시지 분석 작업을 시작합니다.

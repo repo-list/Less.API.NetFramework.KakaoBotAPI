@@ -766,7 +766,11 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
 
                             LastMessageIndex++;
                             user = FindUserByNickname(userName);
-                            if (user == null) AddNewUser(userName);
+                            if (user == null)
+                            {
+                                AddNewUser(userName);
+                                user = FindUserByNickname(userName);
+                            }
 
                             if (!isCaseSensitive) { content = content.ToLower(); answer = answer.ToLower(); }
 
@@ -805,6 +809,27 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
                     IsQuizTaskRunning = false;
                 }
             }
+        }
+
+        /// <summary>
+        /// 유저의 Profile을 업데이트하는 메서드입니다.<para/>
+        /// 이 메서드는 유저가 퀴즈 정답을 맞혔을 경우에 자동으로 호출되므로, 정답 시마다 특정 액션을 취하고 싶다면 이 메서드를 오버라이드하여 사용하십시오.
+        /// </summary>
+        /// <param name="user">유저 객체</param>
+        /// <param name="bonusExperience">추가 경험치</param>
+        /// <param name="bonusMoney">추가 머니</param>
+        protected abstract void UpdateUserProfile(QuizUser user, int bonusExperience, int bonusMoney);
+
+        /// <summary>
+        /// 퀴즈 주제 추가 방법을 설명하는 파일을 생성합니다.
+        /// </summary>
+        /// <param name="path">주제 추가 방법 파일 경로</param>
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        private void GenerateHowToAddQuizSubjectFile(string path)
+        {
+            string message = Properties.Resources.how_to_add_quiz_subjects;
+
+            File.WriteAllLines(path, message.Split(new string[] { "\r\n" }, StringSplitOptions.None), Encoding.Unicode);
         }
 
         /// <summary>
@@ -933,27 +958,6 @@ namespace Less.API.NetFramework.KakaoBotAPI.Bot
         protected virtual void OnQuizAllCompleted()
         {
             SendMessage("문제를 다 풀었습니다. 잠시만 기다려주세요...");
-        }
-
-        /// <summary>
-        /// 유저의 Profile을 업데이트하는 메서드입니다.<para/>
-        /// 이 메서드는 유저가 퀴즈 정답을 맞혔을 경우에 자동으로 호출되므로, 정답 시마다 특정 액션을 취하고 싶다면 이 메서드를 오버라이드하여 사용하십시오.
-        /// </summary>
-        /// <param name="user">유저 객체</param>
-        /// <param name="bonusExperience">추가 경험치</param>
-        /// <param name="bonusMoney">추가 머니</param>
-        protected abstract void UpdateUserProfile(QuizUser user, int bonusExperience, int bonusMoney);
-
-        /// <summary>
-        /// 퀴즈 주제 추가 방법을 설명하는 파일을 생성합니다.
-        /// </summary>
-        /// <param name="path">주제 추가 방법 파일 경로</param>
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        private void GenerateHowToAddQuizSubjectFile(string path)
-        {
-            string message = Properties.Resources.how_to_add_quiz_subjects;
-
-            File.WriteAllLines(path, message.Split(new string[] { "\r\n" }, StringSplitOptions.None), Encoding.Unicode);
         }
     }
 }
